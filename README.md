@@ -16,5 +16,5 @@ directly in a browser.
 
 ## Note
 
-The book and its official code (github.com/luisguiserrano/manning) are not included here —
-only my own experiments.
+Only my own experiments live here. The book's official code repository is at
+[github.com/luisguiserrano/manning](https://github.com/luisguiserrano/manning).
