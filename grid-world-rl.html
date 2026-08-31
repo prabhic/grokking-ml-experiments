@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grid world — the robot learns the board, not the path</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#14202E;
+  --ink2:#41576C;
+  --ink3:#7B90A2;
+  --paper:#E6EDF1;
+  --panel:#FBFCFC;
+  --rule:#C2D2DC;
+  --teal:#0E7C6B;
+  --crim:#B0234A;
+  --gold:#C9901A;
+  --signal:#2D6BE4;
+  --r:3px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  background-image:
+    linear-gradient(to right, rgba(120,150,168,.14) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(120,150,168,.14) 1px, transparent 1px);
+  background-size:26px 26px;
+  color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.gw-wrap{max-width:1180px;margin:0 auto;padding:32px 20px 72px}
+
+/* ---------- header ---------- */
+.gw-eyebrow{
+  font-family:"IBM Plex Mono",monospace;
+  font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink3);margin:0 0 14px;
+}
+.gw-title{
+  font-family:"Fraunces","Iowan Old Style",Georgia,serif;
+  font-weight:600;font-size:clamp(30px,5.4vw,52px);
+  line-height:1.02;letter-spacing:-.015em;margin:0 0 14px;max-width:16ch;
+}
+.gw-title em{font-style:italic;color:var(--teal)}
+.gw-lede{max-width:60ch;color:var(--ink2);margin:0 0 30px;font-size:16px}
+.gw-lede code{font-family:"IBM Plex Mono",monospace;font-size:13.5px;background:#fff;border:1px solid var(--rule);padding:1px 5px;border-radius:var(--r)}
+
+/* ---------- layout ---------- */
+.gw-main{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:22px;align-items:start}
+@media (max-width:900px){.gw-main{grid-template-columns:minmax(0,1fr)}}
+
+.gw-card{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);box-shadow:0 1px 0 rgba(20,32,46,.05)}
+.gw-boardcard{padding:14px 14px 10px}
+.gw-rail{display:flex;flex-direction:column;gap:14px}
+
+.gw-panel{padding:15px 16px 17px}
+.gw-panel h2{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);
+  margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid var(--rule);
+  display:flex;justify-content:space-between;align-items:baseline;
+}
+.gw-panel h2 span{letter-spacing:.04em;text-transform:none;color:var(--ink2)}
+
+/* ---------- board ---------- */
+.gw-boardhead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.gw-stat{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink2)}
+.gw-stat b{color:var(--ink);font-weight:600}
+#gw-svg{width:100%;height:auto;display:block;touch-action:manipulation}
+#gw-svg text{user-select:none}
+.gw-cellhit{cursor:crosshair}
+.gw-legend{display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--rule);
+  font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink3);flex-wrap:wrap}
+.gw-ramp{height:9px;width:150px;border:1px solid var(--rule);border-radius:1px;
+  background:linear-gradient(to right,#B0234A,#E6EDF1,#0E7C6B)}
+
+/* ---------- step anatomy ---------- */
+.gw-anatomy{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:8px;
+  margin-top:10px;padding-top:10px;border-top:1px solid var(--rule)}
+.gw-stage{background:#fff;border:1px solid var(--rule);border-radius:var(--r);padding:8px 9px;min-height:96px}
+.gw-stage.gw-live{border-color:var(--signal);box-shadow:0 0 0 1px var(--signal) inset}
+.gw-stagehead{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink3);margin-bottom:6px;display:flex;gap:6px;align-items:center}
+.gw-stagehead b{display:inline-grid;place-items:center;width:15px;height:15px;border:1px solid var(--rule);
+  border-radius:2px;color:var(--teal);font-size:9.5px;flex:none}
+.gw-stagebody{font-size:12px;color:var(--ink2);line-height:1.5}
+.gw-stagebody b{color:var(--ink);font-family:"IBM Plex Mono",monospace;font-size:11.5px}
+.gw-stagebody .gw-bigarrow{font-size:19px;line-height:1;color:var(--ink)}
+.gw-tagx{display:inline-block;padding:0 5px;border-radius:2px;font-family:"IBM Plex Mono",monospace;
+  font-size:10.5px;font-weight:600;vertical-align:1px}
+.gw-tagx.gw-explore{background:#F3E3BC;color:#7d5c0e}
+.gw-tagx.gw-exploit{background:#D6EAE6;color:var(--teal)}
+.gw-rollbar{position:relative;height:13px;background:#EEF2F5;border:1px solid var(--rule);border-radius:2px;margin:6px 0 5px;overflow:visible}
+.gw-rollzone{position:absolute;left:0;top:0;bottom:0;background:#E8C878;border-radius:1px}
+.gw-rollmark{position:absolute;top:-4px;bottom:-4px;width:3px;background:var(--ink);border-radius:1px;transform:translateX(-50%);transition:left .25s ease}
+.gw-qslide{position:relative;height:13px;background:#EEF2F5;border:1px solid var(--rule);border-radius:2px;margin:6px 0 5px}
+.gw-qfill{position:absolute;left:0;top:0;bottom:0;border-radius:1px;transition:width .25s ease}
+.gw-qlabels{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--ink3)}
+.gw-stageanim{animation:gwpop .3s ease}
+@keyframes gwpop{from{transform:translateY(3px);opacity:.35}to{transform:none;opacity:1}}
+
+/* ---------- controls ---------- */
+.gw-btnrow{display:flex;flex-wrap:wrap;gap:7px}
+button{font:inherit;color:inherit}
+.gw-btn{
+  background:#fff;border:1px solid var(--rule);border-radius:var(--r);
+  padding:7px 11px;font-size:13px;font-weight:500;cursor:pointer;
+  transition:background .12s ease,border-color .12s ease,transform .06s ease;
+}
+.gw-btn:hover{background:#F1F5F7;border-color:var(--ink3)}
+.gw-btn:active{transform:translateY(1px)}
+.gw-btn.gw-primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.gw-btn.gw-primary:hover{background:#22384F}
+.gw-btn.gw-on{background:var(--teal);border-color:var(--teal);color:#fff}
+.gw-btn[disabled]{opacity:.4;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+
+.gw-tools{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.gw-tool{display:flex;align-items:center;gap:7px;justify-content:flex-start}
+.gw-tool.gw-on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+.gw-field{margin:0 0 13px}
+.gw-field:last-child{margin-bottom:0}
+.gw-flabel{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.gw-flabel label{font-size:13px;color:var(--ink2)}
+.gw-flabel output{font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;color:var(--ink)}
+.gw-hint{font-size:11.5px;color:var(--ink3);margin-top:3px;line-height:1.35}
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;background:transparent;margin:0;height:18px;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--rule);border-radius:2px}
+input[type=range]::-moz-range-track{height:3px;background:var(--rule);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--ink);margin-top:-6px;border:2px solid #fff;box-shadow:0 0 0 1px var(--rule)}
+input[type=range]::-moz-range-thumb{width:15px;height:15px;border:2px solid #fff;border-radius:50%;background:var(--ink);box-shadow:0 0 0 1px var(--rule)}
+.gw-check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2);margin-top:9px;cursor:pointer}
+.gw-check input{accent-color:var(--ink);width:15px;height:15px}
+
+/* ---------- readout ---------- */
+.gw-nums{display:grid;grid-template-columns:1fr 1fr;gap:10px 8px;margin-bottom:12px}
+.gw-num{border-left:2px solid var(--rule);padding-left:9px}
+.gw-num b{display:block;font-family:"IBM Plex Mono",monospace;font-size:19px;font-weight:600;line-height:1.15}
+.gw-num small{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);font-family:"IBM Plex Mono",monospace}
+#gw-chart{width:100%;height:64px;display:block;border:1px solid var(--rule);border-radius:var(--r);background:#fff}
+.gw-chartcap{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink3);margin-top:6px}
+
+#gw-trace{
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;line-height:1.65;
+  height:240px;overflow-y:auto;background:#fff;border:1px solid var(--rule);
+  border-radius:var(--r);padding:9px 10px;color:var(--ink2);white-space:pre-wrap;
+}
+#gw-trace .gw-good{color:var(--teal)}
+#gw-trace .gw-bad{color:var(--crim)}
+#gw-trace .gw-dim{color:var(--ink3)}
+
+/* ---------- inspector ---------- */
+#gw-inspect{font-size:13px;color:var(--ink2);line-height:1.5}
+#gw-inspect b{color:var(--ink)}
+#gw-inspect table{width:100%;border-collapse:collapse;font-family:"IBM Plex Mono",monospace;font-size:12px;margin:8px 0}
+#gw-inspect td{padding:3px 4px;border-bottom:1px solid var(--rule);color:var(--ink2)}
+#gw-inspect tr.gw-ibest td{color:var(--teal);font-weight:600}
+
+/* ---------- glossary ---------- */
+.gw-def{margin:0}
+.gw-def dt{font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;color:var(--teal);margin-top:9px}
+.gw-def dt:first-of-type{margin-top:0}
+.gw-def dd{margin:1px 0 0;color:var(--ink2);font-size:13.5px;line-height:1.45}
+
+/* ---------- notes ---------- */
+.gw-notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px;margin-top:34px;padding-top:26px;border-top:1px solid var(--rule)}
+.gw-note h3{font-family:"Fraunces",Georgia,serif;font-size:19px;font-weight:600;margin:0 0 8px;letter-spacing:-.01em}
+.gw-note p{margin:0 0 10px;color:var(--ink2);font-size:14px}
+.gw-formula{font-family:"IBM Plex Mono",monospace;font-size:12.5px;background:#fff;border:1px solid var(--rule);border-left:2px solid var(--teal);border-radius:var(--r);padding:10px 11px;color:var(--ink);line-height:1.7;overflow-x:auto}
+.gw-try{list-style:none;margin:0;padding:0;counter-reset:t}
+.gw-try li{counter-increment:t;position:relative;padding-left:26px;margin-bottom:10px;color:var(--ink2);font-size:14px}
+.gw-try li::before{content:counter(t);position:absolute;left:0;top:1px;font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;color:var(--teal);border:1px solid var(--rule);background:#fff;border-radius:2px;width:17px;height:17px;display:grid;place-items:center}
+.gw-foot{margin-top:34px;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink3)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="gw-wrap">
+
+  <p class="gw-eyebrow">Reinforcement learning · grid world · Q-learning</p>
+  <h1 class="gw-title">The robot learns the board, <em>not</em> the path.</h1>
+  <p class="gw-lede">
+    No one shows it the route. It wanders, collects reward, and writes a number on every
+    <em>square + direction</em> pair — <code>Q(state, action)</code>. Train long enough and the arrows
+    below stop being noise and start being a policy: from any square, take the best-scoring direction.
+    Move the dragon, change the discount, and watch the whole field re-form.
+  </p>
+
+  <div class="gw-main">
+
+    <!-- BOARD -->
+    <section class="gw-card gw-boardcard">
+      <div class="gw-boardhead">
+        <div class="gw-stat">episode <b id="gw-ep">0</b> &nbsp;·&nbsp; state <b id="gw-mode">idle</b></div>
+        <div class="gw-btnrow">
+          <button class="gw-btn gw-on" id="gw-t-arrows" aria-pressed="true">Arrows</button>
+          <button class="gw-btn" id="gw-t-nums" aria-pressed="false">Numbers</button>
+          <button class="gw-btn" id="gw-t-path" aria-pressed="false">Best path</button>
+          <button class="gw-btn" id="gw-t-iso" aria-pressed="false">Book view</button>
+        </div>
+      </div>
+      <svg id="gw-svg" viewBox="0 0 540 440" role="img" aria-label="Grid world board showing learned action values"></svg>
+      <div class="gw-legend">
+        <span>low Q</span><span class="gw-ramp" aria-hidden="true"></span><span>high Q</span>
+        <span style="margin-left:auto" id="gw-scale">scale ±1.0</span>
+      </div>
+      <p class="gw-hint" style="margin:8px 0 2px">
+        How to read the board: every square is cut into four triangles — up, right, down, left.
+        A triangle's colour is the learned Q value for moving that way from that square
+        (green = expected gain, red = expected pain, grey = never learned). The black arrow marks the
+        direction with the highest Q right now. Toggle <b>Numbers</b> to see the raw values.
+      </p>
+
+      <div class="gw-anatomy" id="gw-anatomy">
+        <div class="gw-stage" id="gw-stage-look">
+          <div class="gw-stagehead"><b>1</b> look</div>
+          <div class="gw-stagebody" id="gw-a-look">The robot reads its <i>state</i>: just the number of the square it stands on. No map, no memory of the route. Press <b>Watch one episode</b> to see this strip come alive.</div>
+        </div>
+        <div class="gw-stage" id="gw-stage-roll">
+          <div class="gw-stagehead"><b>2</b> roll · explore or exploit</div>
+          <div class="gw-stagebody" id="gw-a-roll">Every move starts with a random roll 0–1. Lands in the gold ε-zone → random direction. Outside it → best-known Q.<div class="gw-rollbar"><div class="gw-rollzone" style="width:20%"></div></div><div class="gw-qlabels"><span>0</span><span>ε-zone</span><span>1</span></div></div>
+        </div>
+        <div class="gw-stage" id="gw-stage-move">
+          <div class="gw-stagehead"><b>3</b> move · get paid</div>
+          <div class="gw-stagebody" id="gw-a-move">The world answers with exactly two things: a new square and one number, the reward. That's all the feedback there ever is.</div>
+        </div>
+        <div class="gw-stage" id="gw-stage-write">
+          <div class="gw-stagehead"><b>4</b> write · one Q cell</div>
+          <div class="gw-stagebody" id="gw-a-write">The Q of the move it just made slides a fraction α of the way from what it believed toward the <i>target</i>: reward + γ × best Q of the new square. The blue outline on the board marks the exact triangle being rewritten.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RAIL -->
+    <div class="gw-rail">
+
+      <section class="gw-card gw-panel">
+        <h2>Run</h2>
+        <div class="gw-btnrow" style="margin-bottom:11px">
+          <button class="gw-btn gw-primary" id="gw-watch">Watch one episode</button>
+          <button class="gw-btn" id="gw-drive">🎮 Drive it yourself</button>
+          <button class="gw-btn" id="gw-t100">Train 100</button>
+          <button class="gw-btn" id="gw-t1000">Train 1000</button>
+          <button class="gw-btn" id="gw-reset">Forget everything</button>
+        </div>
+        <p class="gw-hint" style="margin:-3px 0 11px">Drive mode: steer with <b>↑ → ↓ ←</b> (or WASD), <b>Esc</b> to stop. The robot learns from <i>your</i> moves exactly as it learns from its own — every keypress runs the same Q-update.</p>
+        <div class="gw-field">
+          <div class="gw-flabel"><label for="gw-speed">Playback speed</label><output id="gw-speed-o">160 ms/step</output></div>
+          <input type="range" id="gw-speed" min="0" max="400" step="20" value="160">
+        </div>
+        <label class="gw-check"><input type="checkbox" id="gw-explain" checked> Narrate the math in the trace</label>
+        <p class="gw-hint">With this on, <b>Watch one episode</b> logs every internal decision: the explore-vs-exploit roll, the reward breakdown, and the exact Q-update arithmetic.</p>
+      </section>
+
+      <section class="gw-card gw-panel">
+        <h2>Trace <span>what the code just did</span></h2>
+        <div id="gw-trace" aria-live="off"></div>
+      </section>
+
+      <section class="gw-card gw-panel">
+        <h2>Learning</h2>
+        <div class="gw-field">
+          <div class="gw-flabel"><label for="gw-alpha">Learning rate α</label><output id="gw-alpha-o">0.20</output></div>
+          <input type="range" id="gw-alpha" min="0.01" max="1" step="0.01" value="0.2">
+          <p class="gw-hint">The step size of every update: <b>new Q = old Q + α × surprise</b>. At 1.00 the latest experience overwrites everything (jumpy, trusts luck); at 0.05 Q creeps slowly but averages out randomness. 0.20 = keep 80% of what I believed, blend in 20% of what just happened.</p>
+        </div>
+        <div class="gw-field">
+          <div class="gw-flabel"><label for="gw-gamma">Discount γ</label><output id="gw-gamma-o">0.90</output></div>
+          <input type="range" id="gw-gamma" min="0" max="0.99" step="0.01" value="0.9">
+          <p class="gw-hint">How much tomorrow's reward is worth today. A reward <i>n</i> steps away counts as γⁿ of itself: at 0.90 the +100 chest is still worth ≈35 seen from ten steps out; at 0.50 it's worth ≈0.1 — effectively invisible from across the board.</p>
+        </div>
+        <div class="gw-field">
+          <div class="gw-flabel"><label for="gw-eps">Exploration ε</label><output id="gw-eps-o">0.20</output></div>
+          <input type="range" id="gw-eps" min="0" max="1" step="0.01" value="0.2">
+          <p class="gw-hint">Before every single move the robot rolls a random number: below ε → go in a <b>random</b> direction (explore), otherwise → follow the best-known Q (exploit). Exploring looks dumb in the moment, but it's the only way new routes ever get discovered.</p>
+          <label class="gw-check"><input type="checkbox" id="gw-decay" checked> Decay ε as it trains</label>
+          <p class="gw-hint">Explore a lot while young and ignorant, settle down once the Q table is trustworthy.</p>
+        </div>
+      </section>
+
+      <section class="gw-card gw-panel">
+        <h2>Rewards</h2>
+        <div class="gw-field">
+          <div class="gw-flabel"><label for="gw-rt">Treasure</label><output id="gw-rt-o">+100</output></div>
+          <input type="range" id="gw-rt" min="0" max="200" step="5" value="100">
+          <p class="gw-hint">Paid once, on the move that lands on the chest — and the episode ends there. This is the only good news in the whole world.</p>
+        </div>
+        <div class="gw-field">
+          <div class="gw-flabel"><label for="gw-rd">Dragon</label><output id="gw-rd-o">−50</output></div>
+          <input type="range" id="gw-rd" min="-200" max="0" step="5" value="-50">
+          <p class="gw-hint">Paid on the move that lands on the dragon; the episode ends there too. Standing <i>next to</i> it costs nothing — the red halo around it is learned fear, not an actual penalty.</p>
+        </div>
+        <div class="gw-field">
+          <div class="gw-flabel"><label for="gw-rs">Cost per step</label><output id="gw-rs-o">−1</output></div>
+          <input type="range" id="gw-rs" min="-10" max="0" step="0.5" value="-1">
+          <p class="gw-hint">Charged on <b>every</b> move. This is the only thing that makes short paths better than long ones — set it to 0 and the robot has no reason to hurry.</p>
+        </div>
+      </section>
+
+      <section class="gw-card gw-panel">
+        <h2>Board <span>click a square</span></h2>
+        <div class="gw-tools">
+          <button class="gw-btn gw-tool gw-on" data-tool="start"><span aria-hidden="true">🤖</span> Start</button>
+          <button class="gw-btn gw-tool" data-tool="treasure"><span aria-hidden="true">💰</span> Treasure</button>
+          <button class="gw-btn gw-tool" data-tool="dragon"><span aria-hidden="true">🐉</span> Dragon</button>
+          <button class="gw-btn gw-tool" data-tool="mountain"><span aria-hidden="true">⛰️</span> Mountain</button>
+          <button class="gw-btn gw-tool" data-tool="erase">Clear square</button>
+          <button class="gw-btn gw-tool" data-tool="inspect"><span aria-hidden="true">🔍</span> Inspect</button>
+        </div>
+        <p class="gw-hint">Editing the board wipes Q — the old numbers describe a world that no longer exists. <b>Inspect</b> only reads; it changes nothing.</p>
+      </section>
+
+      <section class="gw-card gw-panel">
+        <h2>Square inspector <span>🔍</span></h2>
+        <div id="gw-inspect"></div>
+      </section>
+
+      <section class="gw-card gw-panel">
+        <h2>Readout</h2>
+        <div class="gw-nums">
+          <div class="gw-num"><b id="gw-last">—</b><small>last return</small></div>
+          <div class="gw-num"><b id="gw-avg">—</b><small>avg last 20</small></div>
+          <div class="gw-num"><b id="gw-best">—</b><small>best return</small></div>
+          <div class="gw-num"><b id="gw-steps">—</b><small>steps, greedy</small></div>
+        </div>
+        <p class="gw-hint" style="margin:0 0 10px"><b>return</b> = every reward in one episode summed up — the episode's score. <b>avg last 20</b> creeping upward means it's learning. <b>steps, greedy</b> = how long the path is if the robot just follows the arrows with no exploring ("—" until that path actually reaches the chest, "eaten" if it walks into the dragon).</p>
+        <canvas id="gw-chart" width="600" height="128"></canvas>
+        <div class="gw-chartcap">return per episode · last 200 · noisy is normal — ε keeps it gambling</div>
+      </section>
+
+    </div>
+  </div>
+
+  <div class="gw-notes">
+    <div class="gw-note">
+      <h3>What one step does, inside</h3>
+      <ol class="gw-try">
+        <li><b>Look.</b> The robot's <em>state</em> is just the square it stands on — a single number 0–19. It sees nothing else: no map, no treasure direction.</li>
+        <li><b>Roll.</b> A random number is compared with ε. Below ε → move in a random direction (<em>explore</em>). Otherwise → take the direction with the highest Q on this square (<em>exploit</em>).</li>
+        <li><b>The world answers.</b> One new square and one number, the reward: the step cost, plus +100 if it landed on the chest or −50 on the dragon. That is the <em>entire</em> feedback.</li>
+        <li><b>Write.</b> Exactly one cell of the Q table shifts a fraction α toward "reward + γ × best Q of the new square". Nothing else in memory changes.</li>
+        <li><b>Repeat</b> until treasure, dragon, or 300 steps. That whole run is one <em>episode</em>. Turn on "Narrate the math" and press Watch to see steps 1–4 with real numbers.</li>
+      </ol>
+    </div>
+    <div class="gw-note">
+      <h3>The words on this page</h3>
+      <dl class="gw-def">
+        <dt>state · s</dt><dd>Which square the robot is on. Here that's the whole world as the robot experiences it.</dd>
+        <dt>action · a</dt><dd>Up, right, down, or left — four choices in every square.</dd>
+        <dt>Q(s,a)</dt><dd>The robot's estimate: "total future reward if I take action a from square s and play well afterwards." Its entire brain is this 20×4 table — the coloured triangles.</dd>
+        <dt>reward · r</dt><dd>The single number the world pays for one move. Feedback, not instructions.</dd>
+        <dt>return</dt><dd>All the rewards of one episode added up — the score in the chart.</dd>
+        <dt>episode</dt><dd>One run from START until treasure, dragon, or giving up at 300 steps.</dd>
+        <dt>policy</dt><dd>The rule "in every square, follow the biggest Q." Drawn as the black arrows.</dd>
+        <dt>ε-greedy</dt><dd>The explore-vs-exploit coin flip made before every single move.</dd>
+        <dt>surprise · TD error</dt><dd>What a step actually turned out to be worth minus what Q predicted. Learning is just shrinking the surprise.</dd>
+      </dl>
+    </div>
+    <div class="gw-note">
+      <h3>One update per step</h3>
+      <p>Every move produces a reward and a new square. That's the whole loop — the robot never sees the map, only the last transition.</p>
+      <div class="gw-formula">Q(s,a) ← Q(s,a) + α · [ r + γ · max<sub>a'</sub> Q(s',a') − Q(s,a) ]</div>
+      <p style="margin-top:10px">The bracket is the surprise: what the step actually paid, minus what Q predicted it would pay. Q is the retained state; the episode loop is the scan cycle.</p>
+    </div>
+    <div class="gw-note">
+      <h3>Why the arrows spread</h3>
+      <p>Only two squares carry real reward. Everything else gets value by contagion: a square next to a good square becomes good, one step discounted by γ, and that credit walks outward episode by episode.</p>
+      <p>That's why value appears near the treasure first and reaches the robot last — and why the dragon stains its neighbours red even though standing beside it costs nothing.</p>
+    </div>
+    <div class="gw-note">
+      <h3>Try this</h3>
+      <ol class="gw-try">
+        <li>Train 1000, then drop γ to 0.5 and train again. The far squares go flat — the robot can no longer see the treasure from across the board.</li>
+        <li>Set cost per step to 0. Watch the returns stop improving even while the policy still finds the chest.</li>
+        <li>Put the dragon directly beside the treasure. The best path gets longer on purpose.</li>
+        <li>Set ε to 0 before training. The robot commits to the first thing that worked and never finds better.</li>
+        <li>Forget everything, then <b>🎮 Drive it yourself</b> straight to the chest two or three times. Toggle <b>Best path</b>: your route is now its policy — it learned it from watching you, without a single exploration roll.</li>
+      </ol>
+    </div>
+  </div>
+
+  <p class="gw-foot">Grid world after Grokking Machine Learning, fig. 2.11–2.12 · tabular Q-learning, ε-greedy, no dependencies</p>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- world ---------------- */
+var COLS=5, ROWS=4, S=100, PAD=20;
+var N=COLS*ROWS;
+var EMPTY=0, WALL=1, TREASURE=2, DRAGON=3;
+var cellType=new Uint8Array(N);
+var startS, agentS;
+var Q=new Float32Array(N*4);
+var ACT=[[0,-1],[1,0],[0,1],[-1,0]];          // up, right, down, left
+var ACTNAME=["up","right","down","left"];
+var ROT=[0,90,180,270];
+
+function idx(c,r){return r*COLS+c;}
+function col(s){return s%COLS;}
+function row(s){return (s-s%COLS)/COLS;}
+
+function defaultBoard(){
+  cellType.fill(EMPTY);
+  cellType[idx(2,1)]=WALL;
+  cellType[idx(3,2)]=DRAGON;
+  cellType[idx(4,0)]=TREASURE;
+  startS=idx(0,3);
+  agentS=startS;
+}
+
+/* ---------------- params ---------------- */
+var P={alpha:0.2, gamma:0.9, eps:0.2, decay:true, rT:100, rD:-50, rS:-1, speed:160, explain:true};
+var episodes=0, returns=[], best=null, playing=false, timer=null;
+var show={arrows:true, nums:false, path:false, iso:false};
+var tool="start", inspectS=null, lastStep=null;
+var driving=false, dS=0, dTotal=0, dN=0;
+var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function terminal(s){return cellType[s]===TREASURE||cellType[s]===DRAGON;}
+function blocked(s){return cellType[s]===WALL;}
+function curEps(){
+  if(!P.decay) return P.eps;
+  return Math.max(0.02, P.eps*Math.pow(0.999, episodes));
+}
+
+function step(s,a){
+  var c=col(s)+ACT[a][0], r=row(s)+ACT[a][1], ns=s;
+  if(c>=0&&c<COLS&&r>=0&&r<ROWS){
+    var cand=idx(c,r);
+    if(!blocked(cand)) ns=cand;
+  }
+  var rew=P.rS, done=false;
+  if(cellType[ns]===TREASURE){ rew+=P.rT; done=true; }
+  else if(cellType[ns]===DRAGON){ rew+=P.rD; done=true; }
+  return {ns:ns, r:rew, done:done};
+}
+
+function bestA(s){
+  var b=0, bv=Q[s*4];
+  for(var a=1;a<4;a++){ if(Q[s*4+a]>bv){bv=Q[s*4+a]; b=a;} }
+  return b;
+}
+function maxQ(s){
+  var m=Q[s*4];
+  for(var a=1;a<4;a++) if(Q[s*4+a]>m) m=Q[s*4+a];
+  return m;
+}
+function pickAInfo(s,e){
+  var roll=Math.random();
+  if(roll<e) return {a:(Math.random()*4)|0, explored:true, roll:roll, nties:0};
+  var ties=[], bv=-Infinity;
+  for(var a=0;a<4;a++){
+    var v=Q[s*4+a];
+    if(v>bv+1e-9){bv=v;ties=[a];}
+    else if(Math.abs(v-bv)<=1e-9) ties.push(a);
+  }
+  return {a:ties[(Math.random()*ties.length)|0], explored:false, roll:roll, nties:ties.length};
+}
+function pickA(s,e){return pickAInfo(s,e).a;}
+function fq(v){ var x=Math.round(v*100)/100; return (x>=0?"+":"−")+Math.abs(x).toFixed(2); }
+function rewardWhy(ns){
+  if(cellType[ns]===TREASURE) return "  (step "+sgn(P.rS)+" + treasure "+sgn(P.rT)+")";
+  if(cellType[ns]===DRAGON)   return "  (step "+sgn(P.rS)+" + dragon "+sgn(P.rD)+")";
+  return "  (the per-step cost)";
+}
+function logStep(L){
+  if(!P.explain){
+    trace("  ("+col(L.s)+","+row(L.s)+") "+pad(ACTNAME[L.a],5)+" → ("+col(L.ns)+","+row(L.ns)+")  r "+sgn(L.r)+"   Q "+L.newQ.toFixed(1),"gw-dim");
+    return;
+  }
+  trace("step "+L.n+" · "+(L.human?"you're":"robot")+" at ("+col(L.s)+","+row(L.s)+")");
+  if(L.human)
+    trace("  you pressed "+ACTNAME[L.a]+" — no ε roll, you are the policy this time","gw-dim");
+  else if(L.explored)
+    trace("  roll "+L.roll.toFixed(2)+" < ε "+L.eps.toFixed(2)+" → EXPLORE: ignore Q, random pick: "+ACTNAME[L.a],"gw-dim");
+  else if(L.nties===4)
+    trace("  roll "+L.roll.toFixed(2)+" ≥ ε "+L.eps.toFixed(2)+" → exploit, but all 4 Q tie at "+fq(L.oldQ)+" → coin-flip: "+ACTNAME[L.a],"gw-dim");
+  else
+    trace("  roll "+L.roll.toFixed(2)+" ≥ ε "+L.eps.toFixed(2)+" → exploit: "+ACTNAME[L.a]+" has the top Q here ("+fq(L.oldQ)+")","gw-dim");
+  trace("  land ("+col(L.ns)+","+row(L.ns)+")"+(L.ns===L.s&&!L.done?" — bumped a wall/edge, stayed put":"")+" · reward "+sgn(L.r)+rewardWhy(L.ns),"gw-dim");
+  if(L.done)
+    trace("  target = r = "+fq(L.r)+"  (terminal square — no future, so no γ term)","gw-dim");
+  else
+    trace("  target = r "+fq(L.r)+" + γ "+P.gamma.toFixed(2)+" × maxQ(next) "+fq(L.maxN)+" = "+fq(L.target),"gw-dim");
+  trace("  Q("+col(L.s)+","+row(L.s)+","+ACTNAME[L.a]+"): "+fq(L.oldQ)+" + α "+P.alpha.toFixed(2)+" × surprise "+fq(L.surp)+" → "+fq(L.newQ), L.surp>=0?"gw-good":"gw-bad");
+}
+function learn(s,a,r,ns,done){
+  var target = r + (done?0:P.gamma*maxQ(ns));
+  Q[s*4+a] += P.alpha*(target - Q[s*4+a]);
+}
+
+var MAXSTEPS=300;
+function runEpisode(){
+  if(terminal(startS)||blocked(startS)) return {total:0,steps:0,end:"blocked"};
+  var s=startS, total=0, n=0, e=curEps(), end="gave up";
+  while(n<MAXSTEPS){
+    var a=pickA(s,e), o=step(s,a);
+    learn(s,a,o.r,o.ns,o.done);
+    total+=o.r; s=o.ns; n++;
+    if(o.done){ end = cellType[s]===TREASURE ? "treasure" : "dragon"; break; }
+  }
+  episodes++;
+  record(total,n,end);
+  return {total:total,steps:n,end:end};
+}
+function record(total,n,end){
+  returns.push(total);
+  if(returns.length>400) returns.shift();
+  if(best===null||total>best) best=total;
+  trace("ep "+episodes+" · "+n+" steps · return "+sgn(total)+" · "+end,
+        end==="treasure"?"gw-good":(end==="dragon"?"gw-bad":"gw-dim"));
+}
+function trainMany(n){
+  stopPlay();
+  for(var i=0;i<n;i++) runEpisode();
+  agentS=startS;
+  lastStep=null; anatomyIdle();
+  render(); readout();
+}
+
+/* greedy path from start */
+function greedyPath(){
+  if(terminal(startS)||blocked(startS)) return {path:[],steps:0,end:"none"};
+  var s=startS, path=[s], seen={}, n=0, end="loop";
+  while(n<60){
+    if(seen[s]) {end="loop"; break;}
+    seen[s]=1;
+    var a=bestA(s), o=step(s,a);
+    if(o.ns===s && !o.done){ end="stuck"; break; }
+    path.push(o.ns); s=o.ns; n++;
+    if(o.done){ end = cellType[s]===TREASURE?"treasure":"dragon"; break; }
+  }
+  return {path:path, steps:n, end:end};
+}
+
+/* ---------------- animated episode ---------------- */
+function stopPlay(){
+  playing=false; if(timer){clearTimeout(timer);timer=null;}
+  if(driving){ driving=false; document.getElementById("gw-drive").classList.remove("gw-on"); }
+  setMode("idle");
+}
+function watchEpisode(){
+  if(playing){ stopPlay(); render(); return; }
+  stopPlay();
+  if(terminal(startS)||blocked(startS)){ trace("no valid start square","gw-bad"); return; }
+  playing=true; setMode("running");
+  var s=startS, total=0, n=0, e=curEps();
+  agentS=s;
+  trace("── episode "+(episodes+1)+" · ε="+e.toFixed(2)+" ──","gw-dim");
+  (function tick(){
+    if(!playing) return;
+    if(n>=MAXSTEPS){ episodes++; record(total,n,"gave up"); finish(); return; }
+    var pk=pickAInfo(s,e), a=pk.a, o=step(s,a);
+    var oldQ=Q[s*4+a];
+    learn(s,a,o.r,o.ns,o.done);
+    var newQ=Q[s*4+a];
+    total+=o.r; n++;
+    var maxN=o.done?0:maxQ(o.ns);
+    var target=o.r+(o.done?0:P.gamma*maxN);
+    var surp=target-oldQ;
+    lastStep={s:s, a:a, ns:o.ns, r:o.r, done:o.done, oldQ:oldQ, newQ:newQ,
+              maxN:maxN, target:target, surp:surp, roll:pk.roll, eps:e,
+              explored:pk.explored, nties:pk.nties, n:n, human:false};
+    logStep(lastStep);
+    s=o.ns; agentS=s;
+    render(); renderAnatomy();
+    document.getElementById("gw-mode").textContent="running · "+n;
+    if(o.done){ episodes++; record(total,n,cellType[s]===TREASURE?"treasure":"dragon"); finish(); return; }
+    timer=setTimeout(tick, reduceMotion?0:P.speed);
+  })();
+  function finish(){ playing=false; setMode("idle"); agentS=startS; render(); readout(); }
+}
+/* ---------------- drive-it-yourself mode ---------------- */
+function startDrive(){
+  stopPlay();
+  if(terminal(startS)||blocked(startS)){ trace("no valid start square","gw-bad"); return; }
+  driving=true; dS=startS; dTotal=0; dN=0; agentS=dS;
+  document.getElementById("gw-drive").classList.add("gw-on");
+  setMode("driving · use ↑→↓←");
+  trace("── you drive · ↑ → ↓ ← move the robot · Esc stops ──","gw-dim");
+  trace("it learns from your moves the same as from its own — watch the triangles change under you","gw-dim");
+  render();
+}
+function driveStep(a){
+  var o=step(dS,a);
+  var oldQ=Q[dS*4+a];
+  learn(dS,a,o.r,o.ns,o.done);
+  var newQ=Q[dS*4+a];
+  dTotal+=o.r; dN++;
+  var maxN=o.done?0:maxQ(o.ns);
+  var target=o.r+(o.done?0:P.gamma*maxN);
+  lastStep={s:dS, a:a, ns:o.ns, r:o.r, done:o.done, oldQ:oldQ, newQ:newQ,
+            maxN:maxN, target:target, surp:target-oldQ, roll:0, eps:curEps(),
+            explored:false, nties:0, n:dN, human:true};
+  logStep(lastStep);
+  dS=o.ns; agentS=dS;
+  document.getElementById("gw-mode").textContent="driving · "+dN;
+  if(o.done){
+    var won=cellType[dS]===TREASURE;
+    episodes++; record(dTotal,dN,won?"treasure":"dragon");
+    trace(won?"you reached the treasure — your route is now written into Q":"eaten — the robot just learned what not to copy", won?"gw-good":"gw-bad");
+    trace("back at START · keep driving, or press Esc and hit Watch to see it use what you taught it","gw-dim");
+    dS=startS; dTotal=0; dN=0; agentS=dS;
+    readout();
+  }
+  render(); renderAnatomy();
+}
+document.addEventListener("keydown",function(ev){
+  if(!driving) return;
+  if(ev.key==="Escape"){ stopPlay(); agentS=startS; render(); return; }
+  var t=ev.target;
+  if(t && t.tagName==="INPUT") return;   // don't hijack arrows from sliders
+  var map={ArrowUp:0,ArrowRight:1,ArrowDown:2,ArrowLeft:3,w:0,W:0,d:1,D:1,s:2,S:2,a:3,A:3};
+  if(!(ev.key in map)) return;
+  ev.preventDefault();
+  driveStep(map[ev.key]);
+});
+
+function pad(s,n){ while(s.length<n) s+=" "; return s; }
+function sgn(v){ var r=Math.round(v*10)/10; return (r>=0?"+":"−")+Math.abs(r); }
+function setMode(m){ document.getElementById("gw-mode").textContent=m; document.getElementById("gw-watch").textContent = playing?"Stop":"Watch one episode"; }
+
+/* ---------------- colour ---------------- */
+function hex2rgb(h){return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
+var C_NEG=hex2rgb("#B0234A"), C_MID=hex2rgb("#E9EFF2"), C_POS=hex2rgb("#0E7C6B");
+function qColor(v,scale){
+  var t=Math.max(-1,Math.min(1, v/scale)), a, b, k;
+  if(t>=0){ a=C_MID; b=C_POS; k=Math.pow(t,0.75); } else { a=C_MID; b=C_NEG; k=Math.pow(-t,0.75); }
+  var r=Math.round(a[0]+(b[0]-a[0])*k), g=Math.round(a[1]+(b[1]-a[1])*k), bl=Math.round(a[2]+(b[2]-a[2])*k);
+  return "rgb("+r+","+g+","+bl+")";
+}
+function scaleQ(){
+  var m=1;
+  for(var i=0;i<Q.length;i++){ var v=Math.abs(Q[i]); if(v>m) m=v; }
+  return m;
+}
+
+/* ---------------- render ---------------- */
+var svg=document.getElementById("gw-svg");
+var ISO="matrix(1,0,-0.42,1,0,0)", ISOINV="matrix(1,0,0.42,1,0,0)";
+
+function render(){
+  var scale=scaleQ();
+  document.getElementById("gw-scale").textContent="scale ±"+scale.toFixed(1);
+  var iso=show.iso;
+  var gx=PAD+(iso?ROWS*S*0.42:0), gy=PAD;
+  var out='';
+  out+='<g transform="translate('+gx+','+gy+') '+(iso?ISO:'')+'">';
+
+  var inv = iso?" "+ISOINV:"";
+  var s,c,r,x,y,a;
+
+  for(s=0;s<N;s++){
+    c=col(s); r=row(s); x=c*S; y=r*S;
+    var t=cellType[s];
+    if(t===WALL){
+      out+='<rect x="'+x+'" y="'+y+'" width="'+S+'" height="'+S+'" fill="#D7DFE4"/>';
+    } else if(t===TREASURE){
+      out+='<rect x="'+x+'" y="'+y+'" width="'+S+'" height="'+S+'" fill="#FBF0D6"/>';
+    } else if(t===DRAGON){
+      out+='<rect x="'+x+'" y="'+y+'" width="'+S+'" height="'+S+'" fill="#F8DDE3"/>';
+    } else {
+      var cx=x+S/2, cy=y+S/2;
+      var tris=[
+        [[x,y],[x+S,y],[cx,cy]],
+        [[x+S,y],[x+S,y+S],[cx,cy]],
+        [[x,y+S],[x+S,y+S],[cx,cy]],
+        [[x,y],[x,y+S],[cx,cy]]
+      ];
+      for(a=0;a<4;a++){
+        var p=tris[a].map(function(q){return q[0]+","+q[1];}).join(" ");
+        out+='<polygon points="'+p+'" fill="'+qColor(Q[s*4+a],scale)+'" stroke="#FBFCFC" stroke-width="1"/>';
+      }
+      if(show.nums){
+        var off=[[0,-30],[30,0],[0,30],[-30,0]];
+        for(a=0;a<4;a++){
+          var qv=Q[s*4+a];
+          var qtxt=Math.abs(qv)<10 ? qv.toFixed(1) : qv.toFixed(0);
+          var justWritten = lastStep!==null && lastStep.s===s && lastStep.a===a;
+          out+='<text transform="translate('+(cx+off[a][0])+','+(cy+off[a][1]+4)+')'+inv+'" text-anchor="middle" '+
+               'font-family="IBM Plex Mono, monospace" font-size="11" '+
+               (justWritten?'font-weight="700" fill="#2D6BE4" opacity="1"':'fill="#14202E" opacity=".72"')+'>'+
+               qtxt+'</text>';
+        }
+      }
+      if(show.arrows && !show.nums){
+        var ba=bestA(s);
+        var spread=maxQ(s)-Math.min(Q[s*4],Q[s*4+1],Q[s*4+2],Q[s*4+3]);
+        var op = spread<1e-6 ? 0.12 : 0.9;
+        out+='<g transform="translate('+cx+','+cy+')'+inv+'" opacity="'+op+'">'+
+             '<path d="M0,-15 L9,7 L0,2 L-9,7 Z" fill="#14202E" transform="rotate('+ROT[ba]+')"/></g>';
+      }
+    }
+  }
+
+  /* grid lines */
+  out+='<g stroke="#14202E" stroke-opacity=".55" stroke-width="1.4" fill="none">';
+  for(c=0;c<=COLS;c++) out+='<line x1="'+(c*S)+'" y1="0" x2="'+(c*S)+'" y2="'+(ROWS*S)+'"/>';
+  for(r=0;r<=ROWS;r++) out+='<line x1="0" y1="'+(r*S)+'" x2="'+(COLS*S)+'" y2="'+(r*S)+'"/>';
+  out+='</g>';
+
+  /* inspected square highlight */
+  if(inspectS!==null){
+    out+='<rect x="'+(col(inspectS)*S+2.5)+'" y="'+(row(inspectS)*S+2.5)+'" width="'+(S-5)+'" height="'+(S-5)+
+         '" fill="none" stroke="#2D6BE4" stroke-width="2.5" stroke-dasharray="7 5"/>';
+  }
+
+  /* last-update anchors: the exact triangle being rewritten + where its target value came from */
+  if(lastStep!==null){
+    var L=lastStep;
+    var lx=col(L.s)*S, ly=row(L.s)*S, lcx=lx+S/2, lcy=ly+S/2;
+    var tri=[
+      [[lx,ly],[lx+S,ly],[lcx,lcy]],
+      [[lx+S,ly],[lx+S,ly+S],[lcx,lcy]],
+      [[lx,ly+S],[lx+S,ly+S],[lcx,lcy]],
+      [[lx,ly],[lx,ly+S],[lcx,lcy]]
+    ][L.a];
+    var tpts=tri.map(function(q){return q[0]+","+q[1];}).join(" ");
+    var tcx=(tri[0][0]+tri[1][0]+tri[2][0])/3, tcy=(tri[0][1]+tri[1][1]+tri[2][1])/3;
+    out+='<polygon points="'+tpts+'" fill="none" stroke="#2D6BE4" stroke-width="3" opacity=".9"/>';
+    /* γ-credit flowing backward from the next square into the updated triangle */
+    if(!L.done && L.ns!==L.s){
+      var nx2=col(L.ns)*S+S/2, ny2=row(L.ns)*S+S/2;
+      out+='<line x1="'+nx2+'" y1="'+ny2+'" x2="'+tcx+'" y2="'+tcy+'" stroke="#2D6BE4" stroke-width="2" '+
+           'stroke-dasharray="5 4" opacity=".65"/>'+
+           '<circle cx="'+nx2+'" cy="'+ny2+'" r="4.5" fill="none" stroke="#2D6BE4" stroke-width="2" opacity=".65"/>'+
+           '<circle cx="'+tcx+'" cy="'+tcy+'" r="3.5" fill="#2D6BE4"/>';
+    }
+    /* reward badge on the landing square */
+    out+='<text transform="translate('+(col(L.ns)*S+S/2)+','+(row(L.ns)*S+14)+')'+inv+'" text-anchor="middle" '+
+         'font-family="IBM Plex Mono, monospace" font-size="13" font-weight="600" '+
+         'fill="'+(L.r>=0?"#0E7C6B":"#B0234A")+'" stroke="#FBFCFC" stroke-width="3.5" paint-order="stroke">'+
+         sgn(L.r)+'</text>';
+  }
+
+  /* best path */
+  if(show.path){
+    var gp=greedyPath();
+    if(gp.path.length>1){
+      var pts=gp.path.map(function(st){return (col(st)*S+S/2)+","+(row(st)*S+S/2);}).join(" ");
+      out+='<polyline points="'+pts+'" fill="none" stroke="#2D6BE4" stroke-width="6" stroke-linecap="round" '+
+           'stroke-linejoin="round" stroke-dasharray="14 11" opacity=".85"/>';
+    }
+  }
+
+  /* glyphs */
+  for(s=0;s<N;s++){
+    c=col(s); r=row(s); var gcx=c*S+S/2, gcy=r*S+S/2;
+    var g=null, sub=null;
+    if(cellType[s]===WALL) g="⛰️";
+    else if(cellType[s]===TREASURE){ g="💰"; sub=sgn(P.rT); }
+    else if(cellType[s]===DRAGON){ g="🐉"; sub=sgn(P.rD); }
+    if(g){
+      out+='<text transform="translate('+gcx+','+(gcy+16)+')'+inv+'" text-anchor="middle" font-size="46">'+g+'</text>';
+      if(sub) out+='<text transform="translate('+gcx+','+(gcy+38)+')'+inv+'" text-anchor="middle" '+
+        'font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="#14202E">'+sub+'</text>';
+    }
+  }
+  /* start marker + agent */
+  var sx=col(startS)*S+S/2, sy=row(startS)*S+S/2;
+  if(!terminal(startS)&&!blocked(startS)){
+    out+='<text transform="translate('+sx+','+(row(startS)*S+16)+')'+inv+'" text-anchor="middle" '+
+         'font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="1.5" fill="#41576C">START</text>';
+  }
+  var ax=col(agentS)*S+S/2, ay=row(agentS)*S+S/2;
+  out+='<g transform="translate('+ax+','+(ay+16)+')'+inv+'">'+
+       '<text text-anchor="middle" font-size="44">🤖</text></g>';
+
+  /* click targets */
+  for(s=0;s<N;s++){
+    out+='<rect class="gw-cellhit" data-s="'+s+'" x="'+(col(s)*S)+'" y="'+(row(s)*S)+'" width="'+S+'" height="'+S+
+         '" fill="transparent"><title>('+col(s)+','+row(s)+')</title></rect>';
+  }
+  out+='</g>';
+
+  var w=COLS*S+PAD*2+(show.iso?ROWS*S*0.42:0);
+  svg.setAttribute("viewBox","0 0 "+w+" "+(ROWS*S+PAD*2));
+  svg.innerHTML=out;
+  renderInspector();
+}
+
+/* ---------------- step anatomy ---------------- */
+var ARROWCH=["↑","→","↓","←"];
+var anatEls={
+  look:document.getElementById("gw-a-look"),
+  roll:document.getElementById("gw-a-roll"),
+  move:document.getElementById("gw-a-move"),
+  write:document.getElementById("gw-a-write")
+};
+var ANAT_IDLE={};
+for(var _k in anatEls) ANAT_IDLE[_k]=anatEls[_k].innerHTML;
+
+function anatomyIdle(){
+  for(var k in anatEls) anatEls[k].innerHTML=ANAT_IDLE[k];
+  Array.prototype.forEach.call(document.querySelectorAll(".gw-stage"),function(st){
+    st.classList.remove("gw-live");
+  });
+}
+function renderAnatomy(){
+  if(!lastStep) return;
+  var L=lastStep;
+
+  /* 1 · LOOK */
+  anatEls.look.innerHTML=
+    'step <b>'+L.n+'</b> · '+(L.human?'you are':'robot')+' on square <b>s = '+L.s+'</b> — that is ('+col(L.s)+','+row(L.s)+').'+
+    '<br>This one number is <i>everything</i> it knows about the world right now.';
+
+  /* 2 · ROLL — the ε-bar (or you, in drive mode) */
+  if(L.human){
+    anatEls.roll.innerHTML=
+      '<span class="gw-tagx gw-explore">YOU</span> pressed <b>'+ACTNAME[L.a]+'</b> — no ε roll this time.'+
+      '<br>Q-learning is <i>off-policy</i>: the update is identical no matter who chose the move. '+
+      'It still learns the greedy values — even from your driving.';
+  } else {
+  var mode = L.explored
+    ? '<span class="gw-tagx gw-explore">EXPLORE</span> ignore Q, random: <b>'+ACTNAME[L.a]+'</b>'
+    : (L.nties===4
+        ? '<span class="gw-tagx gw-exploit">EXPLOIT</span> all 4 Q tied → coin-flip: <b>'+ACTNAME[L.a]+'</b>'
+        : '<span class="gw-tagx gw-exploit">EXPLOIT</span> top Q here: <b>'+ACTNAME[L.a]+'</b> ('+fq(L.oldQ)+')');
+  anatEls.roll.innerHTML=
+    'rolled <b>'+L.roll.toFixed(2)+'</b> — '+(L.explored?'inside':'outside')+' the ε-zone'+
+    '<div class="gw-rollbar"><div class="gw-rollzone" style="width:'+(L.eps*100)+'%"></div>'+
+    '<div class="gw-rollmark" style="left:'+(L.roll*100)+'%"></div></div>'+
+    '<div class="gw-qlabels"><span>0</span><span>ε = '+L.eps.toFixed(2)+'</span><span>1</span></div>'+mode;
+  }
+
+  /* 3 · MOVE — where it landed, what it was paid */
+  var landed;
+  if(cellType[L.ns]===TREASURE) landed='landed on the 💰 — <b>episode over</b>';
+  else if(cellType[L.ns]===DRAGON) landed='walked into the 🐉 — <b>episode over</b>';
+  else if(L.ns===L.s) landed='bumped a wall/edge — stayed put';
+  else landed='landed on ('+col(L.ns)+','+row(L.ns)+')';
+  anatEls.move.innerHTML=
+    '<span class="gw-bigarrow">'+ARROWCH[L.a]+'</span> ('+col(L.s)+','+row(L.s)+') → ('+col(L.ns)+','+row(L.ns)+')'+
+    '<br>'+landed+
+    '<br>reward <b style="color:'+(L.r>=0?"#0E7C6B":"#B0234A")+'">'+sgn(L.r)+'</b>'+rewardWhy(L.ns);
+
+  /* 4 · WRITE — Q slides α of the way toward the target */
+  var slideCol = L.surp>=0 ? "#0E7C6B" : "#B0234A";
+  anatEls.write.innerHTML=
+    (L.done
+      ? 'target = reward = <b>'+fq(L.target)+'</b> (terminal — no γ term)'
+      : 'target = '+fq(L.r)+' + γ'+P.gamma.toFixed(2)+' × <b>'+fq(L.maxN)+'</b> = <b>'+fq(L.target)+'</b>')+
+    '<div class="gw-qslide"><div class="gw-qfill" style="width:'+(P.alpha*100)+'%;background:'+slideCol+'"></div></div>'+
+    '<div class="gw-qlabels"><span>was '+fq(L.oldQ)+'</span><span>slides α='+Math.round(P.alpha*100)+'%</span><span>target '+fq(L.target)+'</span></div>'+
+    'Q('+ACTNAME[L.a]+') is now <b>'+fq(L.newQ)+'</b> — surprise was '+fq(L.surp);
+
+  /* pulse the strip so each step visibly lands */
+  Array.prototype.forEach.call(document.querySelectorAll(".gw-stage"),function(st){
+    st.classList.add("gw-live");
+    var body=st.querySelector(".gw-stagebody");
+    body.classList.remove("gw-stageanim");
+    void body.offsetWidth;
+    body.classList.add("gw-stageanim");
+  });
+}
+
+/* ---------------- square inspector ---------------- */
+function renderInspector(){
+  var el=document.getElementById("gw-inspect");
+  if(inspectS===null){
+    el.innerHTML='Pick the <b>🔍 Inspect</b> tool, then click any square to read the four numbers stored there — the robot’s actual memory for that state. It stays live while you train.';
+    return;
+  }
+  var s=inspectS, c=col(s), r=row(s), t=cellType[s];
+  if(t===WALL){
+    el.innerHTML='<b>('+c+','+r+')</b> is a mountain. The robot can never stand here, so this state is unreachable and its four Q values are never written to.';
+    return;
+  }
+  if(t===TREASURE){
+    el.innerHTML='<b>('+c+','+r+')</b> holds the treasure — a <b>terminal state</b>. Stepping in pays '+sgn(P.rT)+' and ends the episode, so there is no “next move” from here. That’s why the final update uses target = r with no γ term.';
+    return;
+  }
+  if(t===DRAGON){
+    el.innerHTML='<b>('+c+','+r+')</b> is the dragon — a <b>terminal state</b>. Stepping in pays '+sgn(P.rD)+' and ends the episode. Its neighbours turn red because their Q values inherit this pain, one γ-discount per step of distance.';
+    return;
+  }
+  var names=["↑ up","→ right","↓ down","← left"], ba=bestA(s), allZero=true, i;
+  for(i=0;i<4;i++) if(Math.abs(Q[s*4+i])>1e-9) allZero=false;
+  var h='This square is state <b>s = '+s+'</b>, at ('+c+','+r+').'+(s===startS?' It’s also the START square.':'')+' Its row of the Q table:';
+  h+='<table>';
+  for(i=0;i<4;i++){
+    var isBest = (i===ba && !allZero);
+    h+='<tr'+(isBest?' class="gw-ibest"':'')+'><td>Q(s, '+names[i]+')</td><td style="text-align:right">'+fq(Q[s*4+i])+'</td><td>'+(isBest?'← highest = the arrow':'')+'</td></tr>';
+  }
+  h+='</table>';
+  if(allZero){
+    h+='All four are +0.00 — the robot has never learned anything about this square. Train a little and look again.';
+  } else {
+    h+='Each number answers: “if I go that way from here and then play my best, how much total reward do I expect?” — later rewards shrunk by γ per step. The greedy policy just follows the biggest one.';
+  }
+  el.innerHTML=h;
+}
+
+/* ---------------- readout ---------------- */
+function readout(){
+  document.getElementById("gw-ep").textContent=episodes;
+  var last=returns.length?returns[returns.length-1]:null;
+  document.getElementById("gw-last").textContent= last===null?"—":sgn(last);
+  var w=returns.slice(-20);
+  document.getElementById("gw-avg").textContent= w.length? sgn(w.reduce(function(a,b){return a+b;},0)/w.length):"—";
+  document.getElementById("gw-best").textContent= best===null?"—":sgn(best);
+  var gp=greedyPath();
+  document.getElementById("gw-steps").textContent= gp.end==="treasure"? gp.steps : (gp.end==="dragon"?"eaten":"—");
+  chart();
+}
+function chart(){
+  var cv=document.getElementById("gw-chart"), ctx=cv.getContext("2d");
+  var W=cv.width, H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  var d=returns.slice(-200);
+  if(d.length<2) return;
+  var mn=Math.min.apply(null,d), mx=Math.max.apply(null,d);
+  if(mx-mn<1){mx=mn+1;}
+  var yz=H-8-((0-mn)/(mx-mn))*(H-16);
+  if(mn<0&&mx>0){
+    ctx.strokeStyle="#C2D2DC"; ctx.setLineDash([4,4]); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(0,yz); ctx.lineTo(W,yz); ctx.stroke(); ctx.setLineDash([]);
+  }
+  ctx.beginPath();
+  for(var i=0;i<d.length;i++){
+    var x=(i/(d.length-1))*(W-4)+2;
+    var y=H-8-((d[i]-mn)/(mx-mn))*(H-16);
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+  }
+  ctx.strokeStyle="#0E7C6B"; ctx.lineWidth=2; ctx.lineJoin="round"; ctx.stroke();
+}
+var traceEl=document.getElementById("gw-trace");
+function trace(msg,cls){
+  var line=document.createElement("div");
+  if(cls) line.className=cls;
+  line.textContent=msg;
+  traceEl.appendChild(line);
+  while(traceEl.childNodes.length>500) traceEl.removeChild(traceEl.firstChild);
+  traceEl.scrollTop=traceEl.scrollHeight;
+}
+
+/* ---------------- board editing ---------------- */
+function wipeQ(reason){
+  Q=new Float32Array(N*4);
+  episodes=0; returns=[]; best=null; agentS=startS;
+  lastStep=null; anatomyIdle();
+  trace(reason,"gw-dim");
+  render(); readout();
+}
+svg.addEventListener("click",function(ev){
+  var t=ev.target;
+  if(!t||!t.getAttribute) return;
+  var sAttr=t.getAttribute("data-s");
+  if(sAttr===null) return;
+  var s=+sAttr;
+  if(tool==="inspect"){
+    inspectS = (inspectS===s ? null : s);
+    render();
+    return;
+  }
+  stopPlay();
+  if(tool==="start"){
+    if(terminal(s)||blocked(s)){ trace("can't start on that square","gw-bad"); return; }
+    startS=s; agentS=s; wipeQ("start moved → Q cleared");
+  } else if(tool==="erase"){
+    if(cellType[s]===EMPTY) return;
+    cellType[s]=EMPTY; wipeQ("square cleared → Q cleared");
+  } else if(tool==="treasure"){
+    if(s===startS){ trace("that's the start square","gw-bad"); return; }
+    for(var i=0;i<N;i++) if(cellType[i]===TREASURE) cellType[i]=EMPTY;
+    cellType[s]=TREASURE; wipeQ("treasure moved → Q cleared");
+  } else if(tool==="dragon"){
+    if(s===startS){ trace("that's the start square","gw-bad"); return; }
+    cellType[s]=DRAGON; wipeQ("dragon placed → Q cleared");
+  } else if(tool==="mountain"){
+    if(s===startS){ trace("that's the start square","gw-bad"); return; }
+    cellType[s]=WALL; wipeQ("mountain placed → Q cleared");
+  }
+});
+
+/* ---------------- wiring ---------------- */
+function slider(id,key,fmt,after){
+  var el=document.getElementById(id), out=document.getElementById(id+"-o");
+  el.addEventListener("input",function(){
+    P[key]=parseFloat(el.value);
+    out.textContent=fmt(P[key]);
+    if(after) after();
+  });
+  out.textContent=fmt(P[key]);
+}
+slider("gw-alpha","alpha",function(v){return v.toFixed(2);});
+slider("gw-gamma","gamma",function(v){return v.toFixed(2);});
+slider("gw-eps","eps",function(v){return v.toFixed(2);});
+slider("gw-speed","speed",function(v){return v+" ms/step";});
+slider("gw-rt","rT",function(v){return sgn(v);},function(){render();});
+slider("gw-rd","rD",function(v){return sgn(v);},function(){render();});
+slider("gw-rs","rS",function(v){return sgn(v);});
+document.getElementById("gw-decay").addEventListener("change",function(e){P.decay=e.target.checked;});
+document.getElementById("gw-explain").addEventListener("change",function(e){P.explain=e.target.checked;});
+
+function toggle(id,key,extra){
+  var el=document.getElementById(id);
+  el.addEventListener("click",function(){
+    show[key]=!show[key];
+    el.classList.toggle("gw-on",show[key]);
+    el.setAttribute("aria-pressed",String(show[key]));
+    if(extra) extra();
+    render();
+  });
+}
+toggle("gw-t-arrows","arrows");
+toggle("gw-t-nums","nums");
+toggle("gw-t-path","path");
+toggle("gw-t-iso","iso");
+
+document.getElementById("gw-watch").addEventListener("click",watchEpisode);
+document.getElementById("gw-drive").addEventListener("click",function(){
+  if(driving){ stopPlay(); agentS=startS; render(); }
+  else startDrive();
+});
+document.getElementById("gw-t100").addEventListener("click",function(){trainMany(100);});
+document.getElementById("gw-t1000").addEventListener("click",function(){trainMany(1000);});
+document.getElementById("gw-reset").addEventListener("click",function(){stopPlay();wipeQ("Q cleared — back to a blank robot");});
+
+Array.prototype.forEach.call(document.querySelectorAll(".gw-tool"),function(b){
+  b.addEventListener("click",function(){
+    tool=b.getAttribute("data-tool");
+    Array.prototype.forEach.call(document.querySelectorAll(".gw-tool"),function(o){o.classList.toggle("gw-on",o===b);});
+  });
+});
+
+window.addEventListener("resize",chart);
+
+/* ---------------- go ---------------- */
+defaultBoard();
+render(); readout();
+trace("board ready · every Q starts at 0 · the robot knows nothing","gw-dim");
+})();
+</script>
+</body>
+</html>

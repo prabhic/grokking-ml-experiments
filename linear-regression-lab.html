@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Line-fit lab — the line gets nudged into the pattern</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#14202E;
+  --ink2:#41576C;
+  --ink3:#7B90A2;
+  --paper:#E6EDF1;
+  --panel:#FBFCFC;
+  --rule:#C2D2DC;
+  --teal:#0E7C6B;
+  --crim:#B0234A;
+  --gold:#C9901A;
+  --signal:#2D6BE4;
+  --r:3px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  background-image:
+    linear-gradient(to right, rgba(120,150,168,.14) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(120,150,168,.14) 1px, transparent 1px);
+  background-size:26px 26px;
+  color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.lr-wrap{max-width:1180px;margin:0 auto;padding:32px 20px 72px}
+
+/* ---------- header ---------- */
+.lr-eyebrow{
+  font-family:"IBM Plex Mono",monospace;
+  font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink3);margin:0 0 14px;
+}
+.lr-title{
+  font-family:"Fraunces","Iowan Old Style",Georgia,serif;
+  font-weight:600;font-size:clamp(30px,5.4vw,52px);
+  line-height:1.02;letter-spacing:-.015em;margin:0 0 14px;max-width:18ch;
+}
+.lr-title em{font-style:italic;color:var(--teal)}
+.lr-lede{max-width:62ch;color:var(--ink2);margin:0 0 30px;font-size:16px}
+.lr-lede code{font-family:"IBM Plex Mono",monospace;font-size:13.5px;background:#fff;border:1px solid var(--rule);padding:1px 5px;border-radius:var(--r)}
+
+/* ---------- layout ---------- */
+.lr-main{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:22px;align-items:start}
+@media (max-width:900px){.lr-main{grid-template-columns:minmax(0,1fr)}}
+
+.lr-card{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);box-shadow:0 1px 0 rgba(20,32,46,.05)}
+.lr-boardcard{padding:14px 14px 12px}
+.lr-rail{display:flex;flex-direction:column;gap:14px}
+
+.lr-panel{padding:15px 16px 17px}
+.lr-panel h2{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);
+  margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid var(--rule);
+  display:flex;justify-content:space-between;align-items:baseline;
+}
+.lr-panel h2 span{letter-spacing:.04em;text-transform:none;color:var(--ink2)}
+
+.lr-boardhead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.lr-stat{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink2)}
+.lr-stat b{color:var(--ink);font-weight:600}
+#lr-svg{width:100%;height:auto;display:block;touch-action:manipulation;cursor:crosshair}
+#lr-svg text{user-select:none}
+.lr-eqbar{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:space-between;align-items:baseline;
+  margin:0 0 8px;padding:7px 11px;background:#fff;border:1px solid var(--rule);border-radius:var(--r);
+  font-family:"IBM Plex Mono",monospace}
+.lr-eq{font-size:15px;font-weight:600;color:var(--ink)}
+.lr-miss{font-size:15px;font-weight:600;color:var(--ink)}
+.lr-score{font-size:15px;font-weight:600;color:var(--ink)}
+.lr-eqcap{font-size:10.5px;font-weight:500;color:var(--ink3)}
+
+/* ---------- controls ---------- */
+.lr-btnrow{display:flex;flex-wrap:wrap;gap:7px}
+button{font:inherit;color:inherit}
+.lr-btn{
+  background:#fff;border:1px solid var(--rule);border-radius:var(--r);
+  padding:7px 11px;font-size:13px;font-weight:500;cursor:pointer;
+  transition:background .12s ease,border-color .12s ease,transform .06s ease;
+}
+.lr-btn:hover{background:#F1F5F7;border-color:var(--ink3)}
+.lr-btn:active{transform:translateY(1px)}
+.lr-btn.lr-primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.lr-btn.lr-primary:hover{background:#22384F}
+.lr-btn.lr-on{background:var(--teal);border-color:var(--teal);color:#fff}
+.lr-btn[disabled]{opacity:.4;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+
+.lr-field{margin:0 0 13px}
+.lr-field:last-child{margin-bottom:0}
+.lr-flabel{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.lr-flabel label{font-size:13px;color:var(--ink2)}
+.lr-flabel output{font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;color:var(--ink)}
+.lr-hint{font-size:11.5px;color:var(--ink3);margin-top:3px;line-height:1.35}
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;background:transparent;margin:0;height:18px;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--rule);border-radius:2px}
+input[type=range]::-moz-range-track{height:3px;background:var(--rule);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--ink);margin-top:-6px;border:2px solid #fff;box-shadow:0 0 0 1px var(--rule)}
+input[type=range]::-moz-range-thumb{width:15px;height:15px;border:2px solid #fff;border-radius:50%;background:var(--ink);box-shadow:0 0 0 1px var(--rule)}
+.lr-check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2);margin-top:9px;cursor:pointer}
+.lr-check input{accent-color:var(--ink);width:15px;height:15px}
+.lr-tag{display:inline-block;padding:0 5px;border-radius:2px;font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;vertical-align:1px;letter-spacing:.06em}
+.lr-tag.hyper{background:#F3E3BC;color:#7d5c0e}
+.lr-tag.param{background:#D6EAE6;color:var(--teal)}
+
+/* ---------- readout ---------- */
+.lr-nums{display:grid;grid-template-columns:1fr 1fr;gap:10px 8px;margin-bottom:12px}
+.lr-num{border-left:2px solid var(--rule);padding-left:9px}
+.lr-num b{display:block;font-family:"IBM Plex Mono",monospace;font-size:18px;font-weight:600;line-height:1.15}
+.lr-num small{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);font-family:"IBM Plex Mono",monospace}
+#lr-chart{width:100%;height:64px;display:block;border:1px solid var(--rule);border-radius:var(--r);background:#fff}
+.lr-chartcap{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink3);margin-top:6px}
+
+#lr-map{width:100%;height:auto;display:block;border:1px solid var(--rule);border-radius:var(--r);background:#fff;cursor:crosshair}
+
+#lr-trace{
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;line-height:1.65;
+  height:240px;overflow-y:auto;background:#fff;border:1px solid var(--rule);
+  border-radius:var(--r);padding:9px 10px;color:var(--ink2);white-space:pre-wrap;
+}
+#lr-trace .lr-good{color:var(--teal)}
+#lr-trace .lr-bad{color:var(--crim)}
+#lr-trace .lr-dim{color:var(--ink3)}
+
+/* ---------- step anatomy ---------- */
+.lr-anatomy{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:8px;
+  margin-top:10px;padding-top:10px;border-top:1px solid var(--rule)}
+.lr-stage{background:#fff;border:1px solid var(--rule);border-radius:var(--r);padding:8px 9px;min-height:96px}
+.lr-stage.lr-live{border-color:var(--signal);box-shadow:0 0 0 1px var(--signal) inset}
+.lr-stagehead{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink3);margin-bottom:6px;display:flex;gap:6px;align-items:center}
+.lr-stagehead b{display:inline-grid;place-items:center;width:15px;height:15px;border:1px solid var(--rule);
+  border-radius:2px;color:var(--teal);font-size:9.5px;flex:none}
+.lr-stagebody{font-size:12px;color:var(--ink2);line-height:1.5}
+.lr-stagebody b{color:var(--ink);font-family:"IBM Plex Mono",monospace;font-size:11.5px}
+.lr-stageanim{animation:lrpop .3s ease}
+@keyframes lrpop{from{transform:translateY(3px);opacity:.35}to{transform:none;opacity:1}}
+
+/* ---------- notes ---------- */
+.lr-notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px;margin-top:34px;padding-top:26px;border-top:1px solid var(--rule)}
+.lr-note h3{font-family:"Fraunces",Georgia,serif;font-size:19px;font-weight:600;margin:0 0 8px;letter-spacing:-.01em}
+.lr-note p{margin:0 0 10px;color:var(--ink2);font-size:14px}
+.lr-formula{font-family:"IBM Plex Mono",monospace;font-size:12.5px;background:#fff;border:1px solid var(--rule);border-left:2px solid var(--teal);border-radius:var(--r);padding:10px 11px;color:var(--ink);line-height:1.7;overflow-x:auto}
+.lr-try{list-style:none;margin:0;padding:0;counter-reset:t}
+.lr-try li{counter-increment:t;position:relative;padding-left:26px;margin-bottom:10px;color:var(--ink2);font-size:14px}
+.lr-try li::before{content:counter(t);position:absolute;left:0;top:1px;font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;color:var(--teal);border:1px solid var(--rule);background:#fff;border-radius:2px;width:17px;height:17px;display:grid;place-items:center}
+.lr-def{margin:0}
+.lr-def dt{font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;color:var(--teal);margin-top:9px}
+.lr-def dt:first-of-type{margin-top:0}
+.lr-def dd{margin:1px 0 0;color:var(--ink2);font-size:13.5px;line-height:1.45}
+.lr-foot{margin-top:34px;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink3)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="lr-wrap">
+
+  <p class="lr-eyebrow">Linear regression · the square trick · gradient descent</p>
+  <h1 class="lr-title">The line doesn't see the pattern. It gets <em>nudged</em> into it.</h1>
+  <p class="lr-lede">
+    A model here is just two knobs: <code>ŷ = m·x + b</code> — slope m (price per room) and
+    intercept b (base price). Training never solves anything: it picks one house, measures the miss,
+    and nudges both knobs a tiny amount toward that house. The magic is that the same tiny nudge,
+    repeated thousands of times, rolls the line down an <em>error mountain</em> — which you can watch
+    on the map at the right. Every dot on that mountain <em>is</em> a line on this plot.
+  </p>
+
+  <div class="lr-main">
+
+    <!-- DATA SPACE -->
+    <section class="lr-card lr-boardcard">
+      <div class="lr-boardhead">
+        <div class="lr-stat">epoch <b id="lr-ep">0</b> &nbsp;·&nbsp; state <b id="lr-mode">idle</b></div>
+        <div class="lr-btnrow">
+          <button class="lr-btn lr-on" id="lr-t-err" aria-pressed="true">Show misses</button>
+          <button class="lr-btn lr-on" id="lr-t-sq" aria-pressed="true">Show squares</button>
+        </div>
+      </div>
+      <div class="lr-eqbar">
+        <span class="lr-eq" id="lr-eq"></span>
+        <span class="lr-miss" id="lr-miss"></span>
+        <span class="lr-score" id="lr-score"></span>
+      </div>
+      <svg id="lr-svg" viewBox="0 0 560 430" role="img" aria-label="Data space: houses and the fitted line"></svg>
+      <p class="lr-hint" style="margin:8px 0 2px">
+        How to read this: each dot is a house (x rooms, y price). The dark line is the current model —
+        the only thing that ever changes is its two numbers, m and b. Dashed drops are the misses
+        (y − ŷ); the pink squares literally ARE the square error, one square per miss.
+        Two numbers live on the plot: <b>RMSE</b> (top-right) is the score — the one to make small.
+        <b>ŷ(4)</b> on the ◆ is the prediction for the 4-room house — you want it <i>right</i> (≈300),
+        not low; it falls out automatically once RMSE is small.
+        <b>Click empty space to add a house, click a dot to remove it.</b>
+      </p>
+
+      <div class="lr-anatomy" id="lr-anatomy">
+        <div class="lr-stage">
+          <div class="lr-stagehead"><b>1</b> pick</div>
+          <div class="lr-stagebody" id="lr-a-pick">Each step handles exactly one house, chosen at random. The model never sees the whole dataset at once — just one miss at a time. Press <b>Watch one epoch</b> to see this live.</div>
+        </div>
+        <div class="lr-stage">
+          <div class="lr-stagehead"><b>2</b> predict</div>
+          <div class="lr-stagebody" id="lr-a-predict">Run the two knobs forward: ŷ = m·x + b. That's the model's entire opinion about this house.</div>
+        </div>
+        <div class="lr-stage">
+          <div class="lr-stagehead"><b>3</b> compare</div>
+          <div class="lr-stagebody" id="lr-a-compare">The miss is y − ŷ. Positive → point is above the line → the line must come up. Negative → it must come down. The sign of the miss IS the direction.</div>
+        </div>
+        <div class="lr-stage">
+          <div class="lr-stagehead"><b>4</b> nudge</div>
+          <div class="lr-stagebody" id="lr-a-nudge">Both knobs move a fraction h toward the point: b gets h·miss (translate), m gets h·x·miss (rotate). Nothing else in the model exists to change.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RAIL -->
+    <div class="lr-rail">
+
+      <section class="lr-card lr-panel">
+        <h2>Run</h2>
+        <div class="lr-btnrow" style="margin-bottom:11px">
+          <button class="lr-btn lr-primary" id="lr-watch">Watch one epoch</button>
+          <button class="lr-btn" id="lr-steer">🎮 Steer it yourself</button>
+          <button class="lr-btn" id="lr-t100">Train 100</button>
+          <button class="lr-btn" id="lr-t1000">Train 1000</button>
+          <button class="lr-btn" id="lr-reset">Random line</button>
+        </div>
+        <p class="lr-hint" style="margin:-3px 0 11px">Steer mode: <b>↑ ↓</b> = intercept b (translate), <b>← →</b> = slope m (rotate), <b>Esc</b> stops. Your stride is fixed (b ±5, m ±1) — when RMSE stops improving you've hit your stride's floor, not the true bottom. <b>Hold Shift</b> for ×10 finer steps: that's you doing reduce-on-plateau by hand. (The h slider only sets the <i>algorithm's</i> stride, not yours.)</p>
+        <div class="lr-field">
+          <div class="lr-flabel"><label for="lr-speed">Playback speed</label><output id="lr-speed-o">260 ms/step</output></div>
+          <input type="range" id="lr-speed" min="0" max="800" step="20" value="260">
+        </div>
+        <label class="lr-check"><input type="checkbox" id="lr-explain" checked> Narrate the math in the trace</label>
+      </section>
+
+      <section class="lr-card lr-panel">
+        <h2>Mount Errorest <span>every dot = a line</span></h2>
+        <canvas id="lr-map" width="300" height="240"></canvas>
+        <p class="lr-hint" style="margin-top:8px">
+          The whole (m, b) plane, coloured by error: green valley = good lines, red ridges = bad ones.
+          The dot is the current model; the trail is where training has walked; ★ marks the lowest
+          point on the map. <b>Click anywhere here to teleport the line there</b> — then train and
+          watch it roll home.
+        </p>
+      </section>
+
+      <section class="lr-card lr-panel">
+        <h2>Learning</h2>
+        <div class="lr-field">
+          <div class="lr-flabel"><label for="lr-h">Learning rate h <span class="lr-tag hyper">HYPERPARAM</span></label><output id="lr-h-o">0.01</output></div>
+          <input type="range" id="lr-h" min="-4" max="-0.4" step="0.05" value="-2">
+          <p class="lr-hint">The size of every nudge. Too small → the line crawls for thousands of epochs. Too big → each nudge overshoots the valley and the error explodes. You set this before training — the model can't change it.</p>
+        </div>
+        <div class="lr-field">
+          <div class="lr-flabel"><label>Trick <span class="lr-tag hyper">HYPERPARAM</span></label></div>
+          <div class="lr-btnrow">
+            <button class="lr-btn lr-on" id="lr-trick-sq">Square trick</button>
+            <button class="lr-btn" id="lr-trick-abs">Absolute trick</button>
+          </div>
+          <p class="lr-hint">Square: the nudge is proportional to the miss — big miss, big nudge, and the mountain is a smooth bowl. Absolute: the nudge only uses the <i>sign</i> of the miss — constant-size steps, and the mountain becomes a sharp-bottomed cone. Watch the map change when you switch.</p>
+        </div>
+      </section>
+
+      <section class="lr-card lr-panel">
+        <h2>Data</h2>
+        <div class="lr-btnrow" style="margin-bottom:8px">
+          <button class="lr-btn" id="lr-book">Book dataset</button>
+          <button class="lr-btn" id="lr-outlier">Add an outlier</button>
+        </div>
+        <p class="lr-hint">The book's six houses: 1→150, 2→200 … 7→450. The outlier button drops one absurdly priced house — watch how much harder the square trick chases it than the absolute trick (squares punish big misses quadratically).</p>
+      </section>
+
+      <section class="lr-card lr-panel">
+        <h2>Readout</h2>
+        <div class="lr-nums">
+          <div class="lr-num"><b id="lr-m">—</b><small>m · slope <span class="lr-tag param">PARAM</span></small></div>
+          <div class="lr-num"><b id="lr-b">—</b><small>b · intercept <span class="lr-tag param">PARAM</span></small></div>
+          <div class="lr-num"><b id="lr-rmse">—</b><small>rmse</small></div>
+          <div class="lr-num"><b id="lr-mae">—</b><small>mae</small></div>
+        </div>
+        <p class="lr-hint" style="margin:0 0 10px">
+          <b>m, b</b> are the parameters — the model owns them and training rewrites them.
+          <b>RMSE</b> = root-mean-square error, in the same units as price: "on average the line
+          misses a house by about this many dollars." Prediction for the 4-room house:
+          <b id="lr-pred4" style="font-family:'IBM Plex Mono',monospace">—</b>
+        </p>
+        <canvas id="lr-chart" width="600" height="128"></canvas>
+        <div class="lr-chartcap">rmse per epoch · watch it fall, flatten — that's when to stop</div>
+      </section>
+
+      <section class="lr-card lr-panel">
+        <h2>Trace <span>what the code just did</span></h2>
+        <div id="lr-trace" aria-live="off"></div>
+      </section>
+
+    </div>
+  </div>
+
+  <div class="lr-notes">
+    <div class="lr-note">
+      <h3>One nudge per step</h3>
+      <p>Pick a house, predict, measure the miss, nudge both knobs. That's the whole algorithm — the square trick:</p>
+      <div class="lr-formula">miss = y − ŷ<br>b ← b + h · miss<br>m ← m + h · x · miss</div>
+      <p style="margin-top:10px">Why this collapses the book's four rotate/translate cases into one: the miss <em>carries its own sign</em>. Point above the line → miss positive → both knobs go up. Below → negative → both go down. And multiplying by x makes the rotation stronger for far-out points — exactly what a lever arm should do.</p>
+    </div>
+    <div class="lr-note">
+      <h3>Two pictures, one model</h3>
+      <p>The plot on the left and the mountain on the right are the same object seen twice. A line in data space = a single dot in (m, b) space. A good fit = a low point on the mountain.</p>
+      <p>Here is the honest part: training never sees the mountain. No map, no global view. Each step it feels the local slope through one house's miss and takes one small step downhill. That blind local rule finding the valley anyway — that <em>is</em> gradient descent, and it's the same principle that trains networks with billions of knobs instead of two.</p>
+    </div>
+    <div class="lr-note">
+      <h3>The words on this page</h3>
+      <dl class="lr-def">
+        <dt>feature · x</dt><dd>What we predict from — here, the number of rooms.</dd>
+        <dt>label · y</dt><dd>What we predict — the price. Data = (feature, label) pairs.</dd>
+        <dt>model · ŷ = m·x + b</dt><dd>A formula from feature to prediction. Two numbers, fully described.</dd>
+        <dt>weight · m</dt><dd>Slope: how much the prediction rises per extra room. Turning it rotates the line.</dd>
+        <dt>bias · b</dt><dd>Intercept: the prediction at x = 0. Turning it translates the line.</dd>
+        <dt>error function</dt><dd>One number scoring the whole line: sum (or mean) of misses — absolute or squared.</dd>
+        <dt>RMSE</dt><dd>√(mean of squared misses) — back in price units: the typical miss per house.</dd>
+        <dt>epoch</dt><dd>One pass through every house, one nudge each.</dd>
+        <dt>learning rate · h</dt><dd>Nudge size. Set by you, never learned.</dd>
+        <dt>gradient descent</dt><dd>Repeat "feel the local slope, step downhill" until the error stops falling.</dd>
+        <dt>parameters vs hyperparameters</dt><dd>What training changes (m, b) vs what you set before training (h, epochs, trick).</dd>
+        <dt>stochastic</dt><dd>Nudging on one point at a time — what this page does. Batch = compute on all points, then one nudge.</dd>
+      </dl>
+    </div>
+    <div class="lr-note">
+      <h3>Try this</h3>
+      <ol class="lr-try">
+        <li>Crank h to 0.35 and Train 100. The chart explodes — every nudge overshoots the valley and lands higher on the far wall. This is the classic "learning rate too big" failure.</li>
+        <li>Drop h to 0.0001. The line still learns — at a crawl. Same destination, thousands more epochs.</li>
+        <li>Switch to the <b>Absolute trick</b> and look at the mountain: the smooth bowl becomes a sharp cone, and near the bottom the line jitters forever — constant-size steps can't settle. That's why the square error's "nicer derivative" matters.</li>
+        <li><b>Add an outlier</b>, train, and compare tricks: the square trick drags the whole line toward the absurd house far more than the absolute trick does. Squaring makes big misses scream.</li>
+        <li>Click a far corner of Mount Errorest, then Train 1000 — the trail rolls into the valley from anywhere. Different start, same bottom.</li>
+        <li>Random line, then <b>🎮 Steer it yourself</b> to the lowest RMSE you can. Then Train 1000 and see what the blind nudge rule beats you with.</li>
+      </ol>
+    </div>
+  </div>
+
+  <p class="lr-foot">Line-fit lab after Grokking Machine Learning, ch. 3 (figs 3.1–3.23) · stochastic square/absolute trick · no dependencies</p>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- data ---------------- */
+var BOOK=[[1,150],[2,200],[3,250],[5,350],[6,400],[7,450]];
+var pts=[];
+function loadBook(){ pts=BOOK.map(function(p){return {x:p[0],y:p[1]};}); }
+
+/* ---------------- params ---------------- */
+var m=0, b=0;                       // the parameters — the entire model
+var P={h:0.01, trick:"square", speed:260, explain:true};
+var epoch=0, rmseHist=[], trail=[];
+var show={err:true, sq:true};
+var playing=false, timer=null, steering=false, steerBest=null;
+var lastStep=null, pickIdx=null;
+var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function randomLine(){ m=Math.random()*100-10; b=Math.random()*220-40; }
+
+function predict(x){ return m*x+b; }
+function rmse(){
+  if(!pts.length) return 0;
+  var s=0,i; for(i=0;i<pts.length;i++){ var e=pts[i].y-predict(pts[i].x); s+=e*e; }
+  return Math.sqrt(s/pts.length);
+}
+function mae(){
+  if(!pts.length) return 0;
+  var s=0,i; for(i=0;i<pts.length;i++) s+=Math.abs(pts[i].y-predict(pts[i].x));
+  return s/pts.length;
+}
+function costAt(mm,bb){          // landscape metric matches the trick
+  var s=0,i,e;
+  for(i=0;i<pts.length;i++){
+    e=pts[i].y-(mm*pts[i].x+bb);
+    s+= P.trick==="square" ? e*e : Math.abs(e);
+  }
+  return P.trick==="square" ? Math.sqrt(s/Math.max(1,pts.length)) : s/Math.max(1,pts.length);
+}
+
+/* ---------------- one training step ---------------- */
+function stepPoint(i,human){
+  var pt=pts[i];
+  var yhat=predict(pt.x), miss=pt.y-yhat;
+  var dm, db;
+  if(P.trick==="square"){ dm=P.h*pt.x*miss; db=P.h*miss; }
+  else { var sg = miss>0?1:(miss<0?-1:0); dm=P.h*pt.x*sg*20; db=P.h*sg*20; }
+  var m0=m, b0=b;
+  m+=dm; b+=db;
+  lastStep={i:i, x:pt.x, y:pt.y, yhat:yhat, miss:miss, dm:dm, db:db, m0:m0, b0:b0, m1:m, b1:b, human:!!human};
+  return lastStep;
+}
+
+function fq(v){ var x=Math.round(v*100)/100; return (x>=0?"+":"−")+Math.abs(x).toFixed(2); }
+function fnum(v){ return (Math.round(v*100)/100).toFixed(2); }
+
+function logStep(L){
+  if(!P.explain){
+    trace("  house("+L.x+","+L.y+")  miss "+fq(L.miss)+"  m "+fnum(L.m1)+"  b "+fnum(L.b1),"lr-dim");
+    return;
+  }
+  trace("picked house (x "+L.x+", y "+L.y+")");
+  trace("  predict: ŷ = m "+fnum(L.m0)+" × "+L.x+" + b "+fnum(L.b0)+" = "+fnum(L.yhat),"lr-dim");
+  trace("  miss: y − ŷ = "+L.y+" − "+fnum(L.yhat)+" = "+fq(L.miss)+" → point is "+(L.miss>=0?"ABOVE → line must rise":"BELOW → line must drop"),"lr-dim");
+  if(P.trick==="square"){
+    trace("  nudge b += h "+P.h+" × "+fq(L.miss)+" = "+fq(L.db)+"  → b "+fnum(L.b1)+"  (translate)","lr-dim");
+    trace("  nudge m += h "+P.h+" × x "+L.x+" × "+fq(L.miss)+" = "+fq(L.dm)+"  → m "+fnum(L.m1)+"  (rotate)", Math.abs(L.miss)<20?"lr-good":"lr-bad");
+  } else {
+    trace("  nudge b += h × sign("+fq(L.miss)+") = "+fq(L.db)+"  → b "+fnum(L.b1)+"  (translate, fixed size)","lr-dim");
+    trace("  nudge m += h × x × sign = "+fq(L.dm)+"  → m "+fnum(L.m1)+"  (rotate, fixed size)", Math.abs(L.miss)<20?"lr-good":"lr-bad");
+  }
+}
+
+/* ---------------- epochs ---------------- */
+function shuffled(){
+  var idx=pts.map(function(_,i){return i;});
+  for(var i=idx.length-1;i>0;i--){ var j=(Math.random()*(i+1))|0, t=idx[i]; idx[i]=idx[j]; idx[j]=t; }
+  return idx;
+}
+function runEpoch(){
+  var order=shuffled();
+  for(var k=0;k<order.length;k++) stepPoint(order[k],false);
+  epoch++;
+  rmseHist.push(rmse());
+  if(rmseHist.length>600) rmseHist.shift();
+  trail.push([m,b]);
+  if(trail.length>500) trail.shift();
+}
+function trainMany(n){
+  stopPlay();
+  for(var i=0;i<n;i++) runEpoch();
+  lastStep=null; pickIdx=null; anatomyIdle();
+  trace("trained "+n+" epochs · rmse "+fnum(rmse())+" · m "+fnum(m)+" · b "+fnum(b),"lr-dim");
+  renderAll();
+}
+
+/* ---------------- animated epoch ---------------- */
+function stopPlay(){
+  playing=false; if(timer){clearTimeout(timer);timer=null;}
+  if(steering){ steering=false; document.getElementById("lr-steer").classList.remove("lr-on"); }
+  pickIdx=null; setMode("idle");
+}
+function setMode(t){ document.getElementById("lr-mode").textContent=t; document.getElementById("lr-watch").textContent = playing?"Stop":"Watch one epoch"; }
+function watchEpoch(){
+  if(playing){ stopPlay(); renderAll(); return; }
+  stopPlay();
+  if(pts.length<2){ trace("need at least 2 points","lr-bad"); return; }
+  playing=true; setMode("running");
+  var order=shuffled(), k=0;
+  trace("── epoch "+(epoch+1)+" · "+order.length+" houses, shuffled order ──","lr-dim");
+  (function tick(){
+    if(!playing) return;
+    if(k>=order.length){
+      epoch++; rmseHist.push(rmse()); trail.push([m,b]);
+      trace("epoch done · rmse "+fnum(rmse()),"lr-good");
+      playing=false; setMode("idle"); pickIdx=null;
+      renderAll(); return;
+    }
+    pickIdx=order[k];
+    var L=stepPoint(order[k],false);
+    logStep(L);
+    k++;
+    renderAll(); renderAnatomy();
+    document.getElementById("lr-mode").textContent="running · "+k+"/"+order.length;
+    timer=setTimeout(tick, reduceMotion?0:P.speed);
+  })();
+}
+
+/* ---------------- steering ---------------- */
+function startSteer(){
+  stopPlay();
+  steering=true;
+  steerBest=rmse();
+  document.getElementById("lr-steer").classList.add("lr-on");
+  setMode("steering · ← → m · ↑ ↓ b");
+  trace("── you steer · ← → turn slope m · ↑ ↓ shift intercept b · Esc stops ──","lr-dim");
+  trace("goal: push the big RMSE number (top-right of the plot) as low as you can.","lr-dim");
+  renderAll();
+}
+document.addEventListener("keydown",function(ev){
+  if(!steering) return;
+  if(ev.key==="Escape"){ stopPlay(); renderAll(); return; }
+  var t=ev.target;
+  if(t && t.tagName==="INPUT") return;
+  var fine=ev.shiftKey, dB=fine?0.5:5, dM=fine?0.1:1;
+  var tag=fine?" fine":"";
+  var before=rmse(), moved=null;
+  if(ev.key==="ArrowUp"){ b+=dB; moved="b +"+dB+tag+" (translate up)"; }
+  else if(ev.key==="ArrowDown"){ b-=dB; moved="b −"+dB+tag+" (translate down)"; }
+  else if(ev.key==="ArrowRight"){ m+=dM; moved="m +"+dM+tag+" (rotate ccw)"; }
+  else if(ev.key==="ArrowLeft"){ m-=dM; moved="m −"+dM+tag+" (rotate cw)"; }
+  else return;
+  ev.preventDefault();
+  trail.push([m,b]); if(trail.length>500) trail.shift();
+  var after=rmse(), better=after<before;
+  if(steerBest===null||after<steerBest) steerBest=after;
+  trace("  "+moved+" · rmse "+fnum(before)+" → "+fnum(after)+" "+(better?"— downhill ✓":"— uphill ✗"), better?"lr-good":"lr-bad");
+  renderAll();
+});
+
+/* ---------------- data space render ---------------- */
+var svg=document.getElementById("lr-svg");
+var W=560, H=430, PADL=44, PADR=16, PADT=14, PADB=34;
+var XMAX=8.4, YMAX=540, YMIN=-40;
+function X(x){ return PADL + x*(W-PADL-PADR)/XMAX; }
+function Y(y){ return PADT + (YMAX-y)*(H-PADT-PADB)/(YMAX-YMIN); }
+function invX(px){ return (px-PADL)*XMAX/(W-PADL-PADR); }
+function invY(py){ return YMAX-(py-PADT)*(YMAX-YMIN)/(H-PADT-PADB); }
+
+function renderData(){
+  var out='', i;
+  /* axes + grid */
+  out+='<g stroke="#C2D2DC" stroke-width="1">';
+  for(i=0;i<=8;i++) out+='<line x1="'+X(i)+'" y1="'+Y(YMIN)+'" x2="'+X(i)+'" y2="'+Y(YMAX)+'"/>';
+  for(i=0;i<=500;i+=100) out+='<line x1="'+X(0)+'" y1="'+Y(i)+'" x2="'+X(XMAX)+'" y2="'+Y(i)+'"/>';
+  out+='</g>';
+  out+='<g stroke="#14202E" stroke-opacity=".55" stroke-width="1.4">';
+  out+='<line x1="'+X(0)+'" y1="'+Y(YMIN)+'" x2="'+X(0)+'" y2="'+Y(YMAX)+'"/>';
+  out+='<line x1="'+X(0)+'" y1="'+Y(0)+'" x2="'+X(XMAX)+'" y2="'+Y(0)+'"/>';
+  out+='</g>';
+  for(i=1;i<=8;i++) out+='<text x="'+X(i)+'" y="'+(Y(0)+16)+'" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="#7B90A2">'+i+'</text>';
+  for(i=100;i<=500;i+=100) out+='<text x="'+(X(0)-6)+'" y="'+(Y(i)+3)+'" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="#7B90A2">'+i+'</text>';
+  out+='<text x="'+X(XMAX/2)+'" y="'+(H-4)+'" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="#7B90A2">x · rooms (the feature)</text>';
+  out+='<text transform="translate(11,'+Y(250)+') rotate(-90)" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="#7B90A2">y · price (the label)</text>';
+
+  /* error squares + drops */
+  for(i=0;i<pts.length;i++){
+    var p=pts[i], yh=predict(p.x), px=X(p.x), py=Y(p.y), ph=Y(yh);
+    if(show.sq && P.trick==="square"){
+      var side=Math.abs(py-ph);
+      if(side>0.5){
+        var top=Math.min(py,ph);
+        out+='<rect x="'+(px-side)+'" y="'+top+'" width="'+side+'" height="'+side+'" fill="rgba(176,35,74,.10)" stroke="rgba(176,35,74,.45)" stroke-width="1"/>';
+      }
+    }
+    if(show.err){
+      out+='<line x1="'+px+'" y1="'+py+'" x2="'+px+'" y2="'+ph+'" stroke="#B0234A" stroke-width="1.5" stroke-dasharray="4 3" opacity=".8"/>';
+      out+='<circle cx="'+px+'" cy="'+ph+'" r="2.5" fill="#B0234A" opacity=".7"/>';
+    }
+  }
+
+  /* the line */
+  var y0=predict(0), y1=predict(XMAX);
+  out+='<line x1="'+X(0)+'" y1="'+Y(y0)+'" x2="'+X(XMAX)+'" y2="'+Y(y1)+'" stroke="#14202E" stroke-width="3.5" stroke-linecap="round"/>';
+
+  /* prediction house x=4 */
+  var p4=predict(4);
+  out+='<line x1="'+X(4)+'" y1="'+Y(0)+'" x2="'+X(4)+'" y2="'+Y(p4)+'" stroke="#2D6BE4" stroke-width="1" stroke-dasharray="3 3" opacity=".6"/>';
+  out+='<g transform="translate('+X(4)+','+Y(p4)+') rotate(45)"><rect x="-5.5" y="-5.5" width="11" height="11" fill="#2D6BE4"/></g>';
+  out+='<text x="'+(X(4)+9)+'" y="'+(Y(p4)-18)+'" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#2D6BE4" stroke="#FBFCFC" stroke-width="3" paint-order="stroke">4-room house → ŷ '+fnum(p4)+'</text>';
+  out+='<text x="'+(X(4)+9)+'" y="'+(Y(p4)-6)+'" font-family="IBM Plex Mono, monospace" font-size="9" fill="#7B90A2" stroke="#FBFCFC" stroke-width="3" paint-order="stroke">the prediction · not your score</text>';
+
+  /* equation + score live in the header bar above the plot — never overlaps the data */
+  var sc=rmse();
+  document.getElementById("lr-eq").innerHTML=
+    'ŷ = <span style="color:#0E7C6B">'+fnum(m)+'</span>·x '+(b>=0?'+':'−')+' <span style="color:#C9901A">'+fnum(Math.abs(b))+'</span>'+
+    ' <span class="lr-eqcap">· <span style="color:#0E7C6B">m ← →</span> · <span style="color:#C9901A">b ↑ ↓</span></span>';
+  if(lastStep){
+    document.getElementById("lr-miss").innerHTML=
+      'miss <span style="color:'+(lastStep.miss>=0?'#0E7C6B':'#B0234A')+'">'+fq(lastStep.miss)+'</span>'+
+      ' <span class="lr-eqcap">· house ('+lastStep.x+','+lastStep.y+')</span>';
+  } else {
+    document.getElementById("lr-miss").innerHTML=
+      'avg |miss| <span>'+fnum(mae())+'</span>'+
+      ' <span class="lr-eqcap">· per house</span>';
+  }
+  document.getElementById("lr-score").innerHTML=
+    'RMSE <span style="color:'+(steering?'#2D6BE4':'#14202E')+'">'+fnum(sc)+'</span>'+
+    (steering&&steerBest!==null?' <span class="lr-eqcap" style="color:'+(sc<=steerBest+1e-9?'#0E7C6B':'#C9901A')+'">best '+fnum(steerBest)+'</span>':'')+
+    ' <span class="lr-eqcap">· lower = better</span>';
+
+  /* points */
+  for(i=0;i<pts.length;i++){
+    var q=pts[i];
+    var hot = pickIdx===i;
+    out+='<circle class="lr-pt" data-i="'+i+'" cx="'+X(q.x)+'" cy="'+Y(q.y)+'" r="'+(hot?9:7)+'" fill="'+(hot?'#C9901A':'#41576C')+'" stroke="#FBFCFC" stroke-width="2.5"/>';
+    if(hot) out+='<circle cx="'+X(q.x)+'" cy="'+Y(q.y)+'" r="14" fill="none" stroke="#C9901A" stroke-width="2" opacity=".6"/>';
+  }
+
+  svg.innerHTML=out;
+}
+
+/* click to add / remove points */
+svg.addEventListener("click",function(ev){
+  var r=svg.getBoundingClientRect();
+  var px=(ev.clientX-r.left)*W/r.width, py=(ev.clientY-r.top)*H/r.height;
+  for(var i=0;i<pts.length;i++){
+    var dx=px-X(pts[i].x), dy=py-Y(pts[i].y);
+    if(dx*dx+dy*dy<160){
+      pts.splice(i,1);
+      trace("house removed · the error landscape just changed shape","lr-dim");
+      mapDirty=true; renderAll(); return;
+    }
+  }
+  var x=invX(px), y=invY(py);
+  if(x<0.2||x>8.2||y<0||y>530) return;
+  x=Math.round(x*10)/10; y=Math.round(y);
+  pts.push({x:x,y:y});
+  trace("house added ("+x+", "+y+") · new mountain, same knobs","lr-dim");
+  mapDirty=true; renderAll();
+});
+
+/* ---------------- mountain (parameter space) ---------------- */
+var map=document.getElementById("lr-map");
+var MW=300, MH=240;
+var M0=-20, M1=120, B0=-60, B1=260;
+var mapDirty=true, mapImage=null, mapMin=null, mapMinMB=null;
+
+function mx(mm){ return (mm-M0)/(M1-M0)*MW; }
+function my(bb){ return (B1-bb)/(B1-B0)*MH; }
+
+function buildMap(){
+  var ctx=map.getContext("2d");
+  var img=ctx.createImageData(MW,MH);
+  var GX=100, GY=80;
+  var vals=new Float32Array(GX*GY);
+  var vmin=Infinity, vmax=-Infinity, gx, gy, v;
+  for(gy=0;gy<GY;gy++){
+    for(gx=0;gx<GX;gx++){
+      var mm=M0+(gx+0.5)*(M1-M0)/GX;
+      var bb=B1-(gy+0.5)*(B1-B0)/GY;
+      v=costAt(mm,bb);
+      vals[gy*GX+gx]=v;
+      if(v<vmin){ vmin=v; mapMinMB=[mm,bb]; }
+      if(v>vmax) vmax=v;
+    }
+  }
+  mapMin=vmin;
+  var LO=[214,234,230], MID=[230,237,241], HI=[176,35,74];
+  for(var pyy=0;pyy<MH;pyy++){
+    for(var pxx=0;pxx<MW;pxx++){
+      gx=Math.min(GX-1,(pxx/MW*GX)|0); gy=Math.min(GY-1,(pyy/MH*GY)|0);
+      v=vals[gy*GX+gx];
+      var t=Math.pow((v-vmin)/(vmax-vmin+1e-9),0.5);
+      t=Math.round(t*13)/13;                       /* contour bands */
+      var c0,c1,k;
+      if(t<0.5){ c0=LO; c1=MID; k=t*2; } else { c0=MID; c1=HI; k=(t-0.5)*2; }
+      var o=(pyy*MW+pxx)*4;
+      img.data[o]  =Math.round(c0[0]+(c1[0]-c0[0])*k);
+      img.data[o+1]=Math.round(c0[1]+(c1[1]-c0[1])*k);
+      img.data[o+2]=Math.round(c0[2]+(c1[2]-c0[2])*k);
+      img.data[o+3]=255;
+    }
+  }
+  mapImage=img;
+  mapDirty=false;
+}
+function renderMap(){
+  if(mapDirty) buildMap();
+  var ctx=map.getContext("2d");
+  ctx.putImageData(mapImage,0,0);
+  /* valley star */
+  if(mapMinMB){
+    ctx.font="12px IBM Plex Mono, monospace";
+    ctx.fillStyle="#14202E";
+    ctx.textAlign="center";
+    ctx.fillText("★", mx(mapMinMB[0]), my(mapMinMB[1])+4);
+  }
+  /* trail */
+  if(trail.length>1){
+    ctx.beginPath();
+    for(var i=0;i<trail.length;i++){
+      var px=mx(trail[i][0]), py=my(trail[i][1]);
+      i?ctx.lineTo(px,py):ctx.moveTo(px,py);
+    }
+    ctx.strokeStyle="#2D6BE4"; ctx.lineWidth=1.5; ctx.globalAlpha=0.75; ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+  /* current model */
+  var cx=mx(m), cy=my(b);
+  ctx.beginPath(); ctx.arc(cx,cy,5,0,Math.PI*2);
+  ctx.fillStyle="#2D6BE4"; ctx.fill();
+  ctx.lineWidth=2; ctx.strokeStyle="#fff"; ctx.stroke();
+  /* axes labels */
+  ctx.font="10px IBM Plex Mono, monospace";
+  ctx.fillStyle="#41576C"; ctx.textAlign="left";
+  ctx.fillText("m →", 6, MH-6);
+  ctx.save(); ctx.translate(10,26); ctx.rotate(-Math.PI/2); ctx.textAlign="right"; ctx.fillText("b →",0,0); ctx.restore();
+}
+map.addEventListener("click",function(ev){
+  var r=map.getBoundingClientRect();
+  var px=(ev.clientX-r.left)*MW/r.width, py=(ev.clientY-r.top)*MH/r.height;
+  stopPlay();
+  m=M0+px/MW*(M1-M0);
+  b=B1-py/MH*(B1-B0);
+  trail.push([m,b]); if(trail.length>500) trail.shift();
+  lastStep=null; pickIdx=null; anatomyIdle();
+  trace("teleported to m "+fnum(m)+", b "+fnum(b)+" · rmse "+fnum(rmse())+" — that dot IS the line on the left","lr-dim");
+  renderAll();
+});
+
+/* ---------------- anatomy ---------------- */
+var anatEls={
+  pick:document.getElementById("lr-a-pick"),
+  predict:document.getElementById("lr-a-predict"),
+  compare:document.getElementById("lr-a-compare"),
+  nudge:document.getElementById("lr-a-nudge")
+};
+var ANAT_IDLE={};
+for(var _k in anatEls) ANAT_IDLE[_k]=anatEls[_k].innerHTML;
+function anatomyIdle(){
+  for(var k in anatEls) anatEls[k].innerHTML=ANAT_IDLE[k];
+  Array.prototype.forEach.call(document.querySelectorAll(".lr-stage"),function(st){ st.classList.remove("lr-live"); });
+}
+function renderAnatomy(){
+  if(!lastStep) return;
+  var L=lastStep;
+  anatEls.pick.innerHTML=
+    'house <b>(x '+L.x+', y '+L.y+')</b> — the gold dot on the plot.'+
+    '<br>One point per step; the rest of the dataset is invisible right now.';
+  anatEls.predict.innerHTML=
+    'ŷ = m <b>'+fnum(L.m0)+'</b> × '+L.x+' + b <b>'+fnum(L.b0)+'</b> = <b>'+fnum(L.yhat)+'</b>'+
+    '<br>Two multiplies and an add — that is the entire model running.';
+  anatEls.compare.innerHTML=
+    'miss = y − ŷ = '+L.y+' − '+fnum(L.yhat)+' = <b style="color:'+(L.miss>=0?"#0E7C6B":"#B0234A")+'">'+fq(L.miss)+'</b>'+
+    '<br>'+(L.miss>=0?'Point is ABOVE the line → it must rise.':'Point is BELOW the line → it must drop.')+
+    ' The sign of the miss decides the direction — no cases needed.';
+  anatEls.nudge.innerHTML=
+    'b: '+fnum(L.b0)+' '+fq(L.db)+' → <b>'+fnum(L.b1)+'</b> (translate)'+
+    '<br>m: '+fnum(L.m0)+' '+fq(L.dm)+' → <b>'+fnum(L.m1)+'</b> (rotate)'+
+    '<br>On the mountain this is one small step downhill.';
+  Array.prototype.forEach.call(document.querySelectorAll(".lr-stage"),function(st){
+    st.classList.add("lr-live");
+    var body=st.querySelector(".lr-stagebody");
+    body.classList.remove("lr-stageanim");
+    void body.offsetWidth;
+    body.classList.add("lr-stageanim");
+  });
+}
+
+/* ---------------- readout + chart + trace ---------------- */
+function readout(){
+  document.getElementById("lr-ep").textContent=epoch;
+  document.getElementById("lr-m").textContent=fnum(m);
+  document.getElementById("lr-b").textContent=fnum(b);
+  document.getElementById("lr-rmse").textContent=fnum(rmse());
+  document.getElementById("lr-mae").textContent=fnum(mae());
+  document.getElementById("lr-pred4").textContent="ŷ = "+fnum(m)+"×4 + "+fnum(b)+" = "+fnum(predict(4));
+  chart();
+}
+function chart(){
+  var cv=document.getElementById("lr-chart"), ctx=cv.getContext("2d");
+  var Wc=cv.width, Hc=cv.height;
+  ctx.clearRect(0,0,Wc,Hc);
+  var d=rmseHist.slice(-300);
+  if(d.length<2) return;
+  var mn=Math.min.apply(null,d), mx2=Math.max.apply(null,d);
+  if(mx2-mn<0.5) mx2=mn+0.5;
+  ctx.beginPath();
+  for(var i=0;i<d.length;i++){
+    var x=(i/(d.length-1))*(Wc-4)+2;
+    var y=Hc-8-((d[i]-mn)/(mx2-mn))*(Hc-16);
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+  }
+  ctx.strokeStyle="#0E7C6B"; ctx.lineWidth=2; ctx.lineJoin="round"; ctx.stroke();
+}
+var traceEl=document.getElementById("lr-trace");
+function trace(msg,cls){
+  var line=document.createElement("div");
+  if(cls) line.className=cls;
+  line.textContent=msg;
+  traceEl.appendChild(line);
+  while(traceEl.childNodes.length>500) traceEl.removeChild(traceEl.firstChild);
+  traceEl.scrollTop=traceEl.scrollHeight;
+}
+
+function renderAll(){ renderData(); renderMap(); readout(); }
+
+/* ---------------- wiring ---------------- */
+document.getElementById("lr-watch").addEventListener("click",watchEpoch);
+document.getElementById("lr-steer").addEventListener("click",function(){
+  if(steering){ stopPlay(); renderAll(); } else startSteer();
+});
+document.getElementById("lr-t100").addEventListener("click",function(){trainMany(100);});
+document.getElementById("lr-t1000").addEventListener("click",function(){trainMany(1000);});
+document.getElementById("lr-reset").addEventListener("click",function(){
+  stopPlay(); randomLine(); epoch=0; rmseHist=[]; trail=[[m,b]];
+  lastStep=null; pickIdx=null; anatomyIdle();
+  trace("new random line · m "+fnum(m)+" · b "+fnum(b)+" · rmse "+fnum(rmse())+" — somewhere up the mountain","lr-dim");
+  renderAll();
+});
+document.getElementById("lr-book").addEventListener("click",function(){
+  stopPlay(); loadBook(); mapDirty=true;
+  trace("book dataset restored (6 houses)","lr-dim");
+  renderAll();
+});
+document.getElementById("lr-outlier").addEventListener("click",function(){
+  stopPlay(); pts.push({x:2,y:480}); mapDirty=true;
+  trace("outlier added: a 2-room house priced 480 · watch the valley move on the map","lr-bad");
+  renderAll();
+});
+
+var speedEl=document.getElementById("lr-speed"), speedO=document.getElementById("lr-speed-o");
+speedEl.addEventListener("input",function(){ P.speed=parseFloat(speedEl.value); speedO.textContent=P.speed+" ms/step"; });
+var hEl=document.getElementById("lr-h"), hO=document.getElementById("lr-h-o");
+function setH(){ P.h=Math.pow(10,parseFloat(hEl.value)); hO.textContent=P.h.toPrecision(2).replace(/\.?0+$/,""); }
+hEl.addEventListener("input",setH); setH();
+document.getElementById("lr-explain").addEventListener("change",function(e){P.explain=e.target.checked;});
+
+function setTrick(t){
+  P.trick=t; mapDirty=true;
+  document.getElementById("lr-trick-sq").classList.toggle("lr-on",t==="square");
+  document.getElementById("lr-trick-abs").classList.toggle("lr-on",t==="abs");
+  trace("trick: "+(t==="square"?"square — nudge ∝ miss, smooth bowl":"absolute — nudge uses only sign(miss), sharp cone"),"lr-dim");
+  renderAll();
+}
+document.getElementById("lr-trick-sq").addEventListener("click",function(){setTrick("square");});
+document.getElementById("lr-trick-abs").addEventListener("click",function(){setTrick("abs");});
+
+function toggleBtn(id,key){
+  var el=document.getElementById(id);
+  el.addEventListener("click",function(){
+    show[key]=!show[key];
+    el.classList.toggle("lr-on",show[key]);
+    el.setAttribute("aria-pressed",String(show[key]));
+    renderData();
+  });
+}
+toggleBtn("lr-t-err","err");
+toggleBtn("lr-t-sq","sq");
+
+window.addEventListener("resize",chart);
+
+/* ---------------- go ---------------- */
+loadBook();
+randomLine();
+trail=[[m,b]];
+trace("ready · a random line, m "+fnum(m)+" · b "+fnum(b)+" — it knows nothing about the pattern","lr-dim");
+trace("the six book houses are plotted · rmse "+fnum(rmse())+" · press Watch one epoch","lr-dim");
+renderAll();
+})();
+</script>
+</body>
+</html>
