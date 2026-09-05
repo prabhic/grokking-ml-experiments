@@ -6,7 +6,7 @@
 <title>Line-fit lab — the line gets nudged into the pattern</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;450;500;600&amp;display=swap" rel="stylesheet">
 <style>
 :root{
   --ink:#14202E;
@@ -22,6 +22,7 @@
   --r:3px;
 }
 *{box-sizing:border-box}
+html{scroll-behavior:smooth}
 html,body{margin:0;padding:0}
 body{
   background:var(--paper);
@@ -35,7 +36,41 @@ body{
   line-height:1.5;
   -webkit-font-smoothing:antialiased;
 }
-.lr-wrap{max-width:1180px;margin:0 auto;padding:32px 20px 72px}
+.lr-wrap{width:100%;margin:0;padding:0 0 72px}
+
+/* ---------- app shell ---------- */
+.lr-appbar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(251,252,252,.96);border-bottom:1px solid var(--rule);
+  box-shadow:0 2px 12px rgba(20,32,46,.06);backdrop-filter:blur(12px);
+}
+.lr-appbar-inner{display:flex;align-items:stretch;min-height:76px;width:100%}
+.lr-brand{
+  width:224px;flex:none;padding:12px 18px;border-right:1px solid var(--rule);
+  display:flex;flex-direction:column;justify-content:center;
+}
+.lr-brand-kicker{font:600 9.5px/1.2 "IBM Plex Mono",monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--teal)}
+.lr-brand-name{font:600 21px/1.15 "Fraunces",Georgia,serif;letter-spacing:-.015em}
+.lr-brand a{font:500 10.5px/1.4 "IBM Plex Mono",monospace;color:var(--ink3);text-decoration:none;margin-top:2px}
+.lr-brand a:hover{color:var(--signal)}
+.lr-toolbar{display:flex;align-items:stretch;min-width:0;flex:1;overflow-x:auto;scrollbar-width:thin}
+.lr-toolgroup{display:flex;align-items:center;gap:6px;padding:9px 12px;border-right:1px solid var(--rule);flex:none}
+.lr-toolgroup.lr-grow{flex:1;min-width:290px}
+.lr-tool-label{font:600 9px/1.2 "IBM Plex Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);align-self:flex-start;margin-top:2px}
+.lr-tool-stack{display:flex;flex-direction:column;justify-content:center;gap:5px}
+.lr-compact-field{width:150px}
+.lr-compact-field .lr-flabel{margin:0}
+.lr-compact-field .lr-flabel label{font-size:10.5px}
+.lr-compact-field input[type=range]{height:13px}
+.lr-compact-check{white-space:nowrap;margin:0;font-size:11.5px}
+.lr-appbar .lr-btn{padding:6px 9px;font-size:11.5px;white-space:nowrap}
+
+.lr-playground{
+  min-height:calc(100svh - 76px);padding:14px 18px 20px;
+  background:rgba(230,237,241,.74);border-bottom:1px solid var(--rule);
+}
+.lr-playground-inner{width:100%;max-width:1680px;margin:0 auto}
+.lr-story{max-width:1180px;margin:0 auto;padding:58px 20px 0;scroll-margin-top:88px}
 
 /* ---------- header ---------- */
 .lr-eyebrow{
@@ -49,15 +84,33 @@ body{
   line-height:1.02;letter-spacing:-.015em;margin:0 0 14px;max-width:18ch;
 }
 .lr-title em{font-style:italic;color:var(--teal)}
-.lr-lede{max-width:62ch;color:var(--ink2);margin:0 0 30px;font-size:16px}
+.lr-lede{max-width:72ch;color:var(--ink2);margin:0 0 30px;font-size:17px}
 .lr-lede code{font-family:"IBM Plex Mono",monospace;font-size:13.5px;background:#fff;border:1px solid var(--rule);padding:1px 5px;border-radius:var(--r)}
 
 /* ---------- layout ---------- */
-.lr-main{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:22px;align-items:start}
-@media (max-width:900px){.lr-main{grid-template-columns:minmax(0,1fr)}}
+.lr-main{display:grid;grid-template-columns:minmax(560px,1fr) 340px;gap:14px;align-items:stretch}
+@media (max-width:1050px){
+  .lr-appbar-inner{display:block}
+  .lr-brand{width:100%;height:54px;padding:7px 14px;border-right:0;border-bottom:1px solid var(--rule);display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center}
+  .lr-brand-kicker{grid-column:2;grid-row:1}
+  .lr-brand-name{grid-row:1 / span 2;font-size:18px}
+  .lr-brand a{grid-column:2;grid-row:2;margin:0}
+  .lr-toolbar{height:70px}
+  .lr-playground{min-height:calc(100svh - 124px)}
+  .lr-main{grid-template-columns:minmax(0,1fr)}
+  .lr-rail{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+  .lr-rail .lr-trace-panel{grid-column:1 / -1}
+}
+@media (max-width:660px){
+  .lr-playground{padding:10px 8px 16px}
+  .lr-rail{grid-template-columns:minmax(0,1fr)!important}
+  .lr-rail .lr-trace-panel{grid-column:auto}
+  .lr-anatomy{grid-template-columns:1fr 1fr!important}
+  .lr-stage{min-height:118px}
+}
 
 .lr-card{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);box-shadow:0 1px 0 rgba(20,32,46,.05)}
-.lr-boardcard{padding:14px 14px 12px}
+.lr-boardcard{padding:12px;display:flex;flex-direction:column;min-width:0}
 .lr-rail{display:flex;flex-direction:column;gap:14px}
 
 .lr-panel{padding:15px 16px 17px}
@@ -72,7 +125,7 @@ body{
 .lr-boardhead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}
 .lr-stat{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink2)}
 .lr-stat b{color:var(--ink);font-weight:600}
-#lr-svg{width:100%;height:auto;display:block;touch-action:manipulation;cursor:crosshair}
+#lr-svg{width:100%;height:clamp(360px,calc(100svh - 390px),620px);min-height:360px;display:block;touch-action:manipulation;cursor:crosshair}
 #lr-svg text{user-select:none}
 .lr-eqbar{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:space-between;align-items:baseline;
   margin:0 0 8px;padding:7px 11px;background:#fff;border:1px solid var(--rule);border-radius:var(--r);
@@ -127,7 +180,7 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:2px solid #fff
 
 #lr-trace{
   font-family:"IBM Plex Mono",monospace;font-size:11.5px;line-height:1.65;
-  height:240px;overflow-y:auto;background:#fff;border:1px solid var(--rule);
+  height:clamp(112px,16svh,160px);overflow-y:auto;background:#fff;border:1px solid var(--rule);
   border-radius:var(--r);padding:9px 10px;color:var(--ink2);white-space:pre-wrap;
 }
 #lr-trace .lr-good{color:var(--teal)}
@@ -135,9 +188,9 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:2px solid #fff
 #lr-trace .lr-dim{color:var(--ink3)}
 
 /* ---------- step anatomy ---------- */
-.lr-anatomy{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:8px;
+.lr-anatomy{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;
   margin-top:10px;padding-top:10px;border-top:1px solid var(--rule)}
-.lr-stage{background:#fff;border:1px solid var(--rule);border-radius:var(--r);padding:8px 9px;min-height:96px}
+.lr-stage{background:#fff;border:1px solid var(--rule);border-radius:var(--r);padding:8px 9px;min-height:100px}
 .lr-stage.lr-live{border-color:var(--signal);box-shadow:0 0 0 1px var(--signal) inset}
 .lr-stagehead{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;letter-spacing:.13em;
   text-transform:uppercase;color:var(--ink3);margin-bottom:6px;display:flex;gap:6px;align-items:center}
@@ -165,28 +218,76 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:2px solid #fff
 </style>
 </head>
 <body>
+<header class="lr-appbar">
+  <div class="lr-appbar-inner">
+    <div class="lr-brand">
+      <span class="lr-brand-kicker">Grokking Machine Learning · ch. 3</span>
+      <strong class="lr-brand-name">Line-fit lab</strong>
+      <a href="#learn">How linear regression learns ↓</a>
+    </div>
+
+    <div class="lr-toolbar" aria-label="Playground controls">
+      <div class="lr-toolgroup">
+        <span class="lr-tool-label">Run</span>
+        <div class="lr-btnrow">
+          <button class="lr-btn lr-primary" id="lr-watch">Watch epoch</button>
+          <button class="lr-btn" id="lr-steer">🎮 Steer</button>
+          <button class="lr-btn" id="lr-t100">+100</button>
+          <button class="lr-btn" id="lr-t1000">+1000</button>
+          <button class="lr-btn" id="lr-reset">Random line</button>
+        </div>
+      </div>
+
+      <div class="lr-toolgroup">
+        <span class="lr-tool-label">Learning</span>
+        <div class="lr-tool-stack">
+          <div class="lr-btnrow">
+            <button class="lr-btn lr-on" id="lr-trick-sq">Square</button>
+            <button class="lr-btn" id="lr-trick-abs">Absolute</button>
+          </div>
+          <div class="lr-compact-field">
+            <div class="lr-flabel"><label for="lr-h">Nudge size h</label><output id="lr-h-o">0.01</output></div>
+            <input type="range" id="lr-h" min="-4" max="-0.4" step="0.05" value="-2">
+          </div>
+        </div>
+      </div>
+
+      <div class="lr-toolgroup">
+        <span class="lr-tool-label">Data</span>
+        <div class="lr-btnrow">
+          <button class="lr-btn" id="lr-book">Book data</button>
+          <button class="lr-btn" id="lr-outlier">+ Outlier</button>
+        </div>
+      </div>
+
+      <div class="lr-toolgroup lr-grow">
+        <span class="lr-tool-label">View</span>
+        <div class="lr-tool-stack">
+          <div class="lr-btnrow">
+            <button class="lr-btn lr-on" id="lr-t-err" aria-pressed="true">Misses</button>
+            <button class="lr-btn lr-on" id="lr-t-sq" aria-pressed="true">Squares</button>
+            <label class="lr-check lr-compact-check"><input type="checkbox" id="lr-explain" checked> Narrate trace</label>
+          </div>
+          <div class="lr-compact-field">
+            <div class="lr-flabel"><label for="lr-speed">Step speed</label><output id="lr-speed-o">260 ms</output></div>
+            <input type="range" id="lr-speed" min="0" max="800" step="20" value="260">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
 <div class="lr-wrap">
-
-  <p class="lr-eyebrow">Linear regression · the square trick · gradient descent</p>
-  <h1 class="lr-title">The line doesn't see the pattern. It gets <em>nudged</em> into it.</h1>
-  <p class="lr-lede">
-    A model here is just two knobs: <code>ŷ = m·x + b</code> — slope m (price per room) and
-    intercept b (base price). Training never solves anything: it picks one house, measures the miss,
-    and nudges both knobs a tiny amount toward that house. The magic is that the same tiny nudge,
-    repeated thousands of times, rolls the line down an <em>error mountain</em> — which you can watch
-    on the map at the right. Every dot on that mountain <em>is</em> a line on this plot.
-  </p>
-
-  <div class="lr-main">
+  <section class="lr-playground" aria-label="Interactive linear regression playground">
+   <div class="lr-playground-inner">
+    <div class="lr-main">
 
     <!-- DATA SPACE -->
     <section class="lr-card lr-boardcard">
       <div class="lr-boardhead">
         <div class="lr-stat">epoch <b id="lr-ep">0</b> &nbsp;·&nbsp; state <b id="lr-mode">idle</b></div>
-        <div class="lr-btnrow">
-          <button class="lr-btn lr-on" id="lr-t-err" aria-pressed="true">Show misses</button>
-          <button class="lr-btn lr-on" id="lr-t-sq" aria-pressed="true">Show squares</button>
-        </div>
+        <div class="lr-stat">click plot to add a house · click a house to remove it</div>
       </div>
       <div class="lr-eqbar">
         <span class="lr-eq" id="lr-eq"></span>
@@ -194,15 +295,7 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:2px solid #fff
         <span class="lr-score" id="lr-score"></span>
       </div>
       <svg id="lr-svg" viewBox="0 0 560 430" role="img" aria-label="Data space: houses and the fitted line"></svg>
-      <p class="lr-hint" style="margin:8px 0 2px">
-        How to read this: each dot is a house (x rooms, y price). The dark line is the current model —
-        the only thing that ever changes is its two numbers, m and b. Dashed drops are the misses
-        (y − ŷ); the pink squares literally ARE the square error, one square per miss.
-        Two numbers live on the plot: <b>RMSE</b> (top-right) is the score — the one to make small.
-        <b>ŷ(4)</b> on the ◆ is the prediction for the 4-room house — you want it <i>right</i> (≈300),
-        not low; it falls out automatically once RMSE is small.
-        <b>Click empty space to add a house, click a dot to remove it.</b>
-      </p>
+      <p class="lr-hint" style="margin:6px 0 0">Dark line = model · dashed drops = misses · pink areas = squared misses · ◆ = prediction for a 4-room house.</p>
 
       <div class="lr-anatomy" id="lr-anatomy">
         <div class="lr-stage">
@@ -226,59 +319,10 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:2px solid #fff
 
     <!-- RAIL -->
     <div class="lr-rail">
-
-      <section class="lr-card lr-panel">
-        <h2>Run</h2>
-        <div class="lr-btnrow" style="margin-bottom:11px">
-          <button class="lr-btn lr-primary" id="lr-watch">Watch one epoch</button>
-          <button class="lr-btn" id="lr-steer">🎮 Steer it yourself</button>
-          <button class="lr-btn" id="lr-t100">Train 100</button>
-          <button class="lr-btn" id="lr-t1000">Train 1000</button>
-          <button class="lr-btn" id="lr-reset">Random line</button>
-        </div>
-        <p class="lr-hint" style="margin:-3px 0 11px">Steer mode: <b>↑ ↓</b> = intercept b (translate), <b>← →</b> = slope m (rotate), <b>Esc</b> stops. Your stride is fixed (b ±5, m ±1) — when RMSE stops improving you've hit your stride's floor, not the true bottom. <b>Hold Shift</b> for ×10 finer steps: that's you doing reduce-on-plateau by hand. (The h slider only sets the <i>algorithm's</i> stride, not yours.)</p>
-        <div class="lr-field">
-          <div class="lr-flabel"><label for="lr-speed">Playback speed</label><output id="lr-speed-o">260 ms/step</output></div>
-          <input type="range" id="lr-speed" min="0" max="800" step="20" value="260">
-        </div>
-        <label class="lr-check"><input type="checkbox" id="lr-explain" checked> Narrate the math in the trace</label>
-      </section>
-
       <section class="lr-card lr-panel">
         <h2>Mount Errorest <span>every dot = a line</span></h2>
         <canvas id="lr-map" width="300" height="240"></canvas>
-        <p class="lr-hint" style="margin-top:8px">
-          The whole (m, b) plane, coloured by error: green valley = good lines, red ridges = bad ones.
-          The dot is the current model; the trail is where training has walked; ★ marks the lowest
-          point on the map. <b>Click anywhere here to teleport the line there</b> — then train and
-          watch it roll home.
-        </p>
-      </section>
-
-      <section class="lr-card lr-panel">
-        <h2>Learning</h2>
-        <div class="lr-field">
-          <div class="lr-flabel"><label for="lr-h">Learning rate h <span class="lr-tag hyper">HYPERPARAM</span></label><output id="lr-h-o">0.01</output></div>
-          <input type="range" id="lr-h" min="-4" max="-0.4" step="0.05" value="-2">
-          <p class="lr-hint">The size of every nudge. Too small → the line crawls for thousands of epochs. Too big → each nudge overshoots the valley and the error explodes. You set this before training — the model can't change it.</p>
-        </div>
-        <div class="lr-field">
-          <div class="lr-flabel"><label>Trick <span class="lr-tag hyper">HYPERPARAM</span></label></div>
-          <div class="lr-btnrow">
-            <button class="lr-btn lr-on" id="lr-trick-sq">Square trick</button>
-            <button class="lr-btn" id="lr-trick-abs">Absolute trick</button>
-          </div>
-          <p class="lr-hint">Square: the nudge is proportional to the miss — big miss, big nudge, and the mountain is a smooth bowl. Absolute: the nudge only uses the <i>sign</i> of the miss — constant-size steps, and the mountain becomes a sharp-bottomed cone. Watch the map change when you switch.</p>
-        </div>
-      </section>
-
-      <section class="lr-card lr-panel">
-        <h2>Data</h2>
-        <div class="lr-btnrow" style="margin-bottom:8px">
-          <button class="lr-btn" id="lr-book">Book dataset</button>
-          <button class="lr-btn" id="lr-outlier">Add an outlier</button>
-        </div>
-        <p class="lr-hint">The book's six houses: 1→150, 2→200 … 7→450. The outlier button drops one absurdly priced house — watch how much harder the square trick chases it than the absolute trick (squares punish big misses quadratically).</p>
+        <p class="lr-hint" style="margin:7px 0 0">Click the landscape to teleport the line. ★ is the lowest-error model.</p>
       </section>
 
       <section class="lr-card lr-panel">
@@ -289,25 +333,38 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:2px solid #fff
           <div class="lr-num"><b id="lr-rmse">—</b><small>rmse</small></div>
           <div class="lr-num"><b id="lr-mae">—</b><small>mae</small></div>
         </div>
-        <p class="lr-hint" style="margin:0 0 10px">
-          <b>m, b</b> are the parameters — the model owns them and training rewrites them.
-          <b>RMSE</b> = root-mean-square error, in the same units as price: "on average the line
-          misses a house by about this many dollars." Prediction for the 4-room house:
-          <b id="lr-pred4" style="font-family:'IBM Plex Mono',monospace">—</b>
-        </p>
+        <p class="lr-hint" style="margin:0 0 8px">4-room prediction: <b id="lr-pred4" style="font-family:'IBM Plex Mono',monospace">—</b></p>
         <canvas id="lr-chart" width="600" height="128"></canvas>
         <div class="lr-chartcap">rmse per epoch · watch it fall, flatten — that's when to stop</div>
       </section>
 
-      <section class="lr-card lr-panel">
+      <section class="lr-card lr-panel lr-trace-panel">
         <h2>Trace <span>what the code just did</span></h2>
         <div id="lr-trace" aria-live="off"></div>
       </section>
 
     </div>
   </div>
+   </div>
+  </section>
+
+  <article class="lr-story" id="learn">
+  <p class="lr-eyebrow">Linear regression · the square trick · gradient descent</p>
+  <h1 class="lr-title">The line doesn't see the pattern. It gets <em>nudged</em> into it.</h1>
+  <p class="lr-lede">
+    A model here is just two knobs: <code>ŷ = m·x + b</code> — slope m (price per room) and
+    intercept b (base price). Training never solves anything: it picks one house, measures the miss,
+    and nudges both knobs a tiny amount toward that house. The same tiny nudge, repeated thousands
+    of times, rolls the line down an <em>error mountain</em>. Every dot on that mountain is a line on
+    the plot above.
+  </p>
 
   <div class="lr-notes">
+    <div class="lr-note">
+      <h3>Read the playground</h3>
+      <p>Each dot is a house: rooms on x, price on y. The dark line is the current model. Its only moving parts are slope <b>m</b> and intercept <b>b</b>. Dashed drops show each miss; the pink areas make the square error literal.</p>
+      <p><b>RMSE</b> is the score to make small. It means the model misses a house by roughly that many price units. The blue ◆ is different: it is the model's prediction for a four-room house, which should approach 300 as the fit improves.</p>
+    </div>
     <div class="lr-note">
       <h3>One nudge per step</h3>
       <p>Pick a house, predict, measure the miss, nudge both knobs. That's the whole algorithm — the square trick:</p>
@@ -318,6 +375,11 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:2px solid #fff
       <h3>Two pictures, one model</h3>
       <p>The plot on the left and the mountain on the right are the same object seen twice. A line in data space = a single dot in (m, b) space. A good fit = a low point on the mountain.</p>
       <p>Here is the honest part: training never sees the mountain. No map, no global view. Each step it feels the local slope through one house's miss and takes one small step downhill. That blind local rule finding the valley anyway — that <em>is</em> gradient descent, and it's the same principle that trains networks with billions of knobs instead of two.</p>
+    </div>
+    <div class="lr-note">
+      <h3>What the top bar changes</h3>
+      <p><b>Nudge size h</b> is the learning rate: too small crawls; too large overshoots. <b>Square</b> makes big misses produce big nudges and a smooth error bowl. <b>Absolute</b> uses only the miss's sign, so every nudge has a fixed size and the landscape has a sharp bottom.</p>
+      <p><b>Steer</b> lets you become the optimizer: ↑ ↓ translate b, ← → rotate m, Shift makes ten-times finer moves, and Esc stops. The speed slider affects the algorithm's narrated playback, not your keyboard stride.</p>
     </div>
     <div class="lr-note">
       <h3>The words on this page</h3>
@@ -350,6 +412,7 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:2px solid #fff
   </div>
 
   <p class="lr-foot">Line-fit lab after Grokking Machine Learning, ch. 3 (figs 3.1–3.23) · stochastic square/absolute trick · no dependencies</p>
+  </article>
 </div>
 
 <script>
@@ -454,7 +517,7 @@ function stopPlay(){
   if(steering){ steering=false; document.getElementById("lr-steer").classList.remove("lr-on"); }
   pickIdx=null; setMode("idle");
 }
-function setMode(t){ document.getElementById("lr-mode").textContent=t; document.getElementById("lr-watch").textContent = playing?"Stop":"Watch one epoch"; }
+function setMode(t){ document.getElementById("lr-mode").textContent=t; document.getElementById("lr-watch").textContent = playing?"Stop":"Watch epoch"; }
 function watchEpoch(){
   if(playing){ stopPlay(); renderAll(); return; }
   stopPlay();
@@ -522,6 +585,11 @@ function invX(px){ return (px-PADL)*XMAX/(W-PADL-PADR); }
 function invY(py){ return YMAX-(py-PADT)*(YMAX-YMIN)/(H-PADT-PADB); }
 
 function renderData(){
+  var bounds=svg.getBoundingClientRect();
+  if(bounds.width && bounds.height){
+    W=Math.max(560,Math.round(H*bounds.width/bounds.height));
+    svg.setAttribute("viewBox","0 0 "+W+" "+H);
+  }
   var out='', i;
   /* axes + grid */
   out+='<g stroke="#C2D2DC" stroke-width="1">';
@@ -805,7 +873,7 @@ document.getElementById("lr-outlier").addEventListener("click",function(){
 });
 
 var speedEl=document.getElementById("lr-speed"), speedO=document.getElementById("lr-speed-o");
-speedEl.addEventListener("input",function(){ P.speed=parseFloat(speedEl.value); speedO.textContent=P.speed+" ms/step"; });
+speedEl.addEventListener("input",function(){ P.speed=parseFloat(speedEl.value); speedO.textContent=P.speed+" ms"; });
 var hEl=document.getElementById("lr-h"), hO=document.getElementById("lr-h-o");
 function setH(){ P.h=Math.pow(10,parseFloat(hEl.value)); hO.textContent=P.h.toPrecision(2).replace(/\.?0+$/,""); }
 hEl.addEventListener("input",setH); setH();
@@ -833,7 +901,7 @@ function toggleBtn(id,key){
 toggleBtn("lr-t-err","err");
 toggleBtn("lr-t-sq","sq");
 
-window.addEventListener("resize",chart);
+window.addEventListener("resize",function(){ renderData(); chart(); });
 
 /* ---------------- go ---------------- */
 loadBook();

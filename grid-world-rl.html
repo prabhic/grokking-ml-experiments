@@ -6,7 +6,7 @@
 <title>Grid world — the robot learns the board, not the path</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;450;500;600&amp;display=swap" rel="stylesheet">
 <style>
 :root{
   --ink:#14202E;
@@ -22,6 +22,7 @@
   --r:3px;
 }
 *{box-sizing:border-box}
+html{scroll-behavior:smooth}
 html,body{margin:0;padding:0}
 body{
   background:var(--paper);
@@ -35,7 +36,42 @@ body{
   line-height:1.5;
   -webkit-font-smoothing:antialiased;
 }
-.gw-wrap{max-width:1180px;margin:0 auto;padding:32px 20px 72px}
+.gw-wrap{width:100%;margin:0;padding:0 0 72px}
+
+/* ---------- app shell ---------- */
+.gw-appbar{
+  position:sticky;top:0;z-index:50;background:rgba(251,252,252,.96);
+  border-bottom:1px solid var(--rule);box-shadow:0 2px 12px rgba(20,32,46,.06);
+  backdrop-filter:blur(12px);
+}
+.gw-appbar-inner{display:grid;grid-template-columns:208px minmax(0,1fr);width:100%;min-height:137px}
+.gw-brand{padding:13px 17px;border-right:1px solid var(--rule);display:flex;flex-direction:column;justify-content:center}
+.gw-brand-kicker{font:600 9.5px/1.3 "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
+.gw-brand-name{font:600 21px/1.15 "Fraunces",Georgia,serif;letter-spacing:-.015em}
+.gw-brand a{font:500 10.5px/1.4 "IBM Plex Mono",monospace;color:var(--ink3);text-decoration:none;margin-top:3px}
+.gw-brand a:hover{color:var(--signal)}
+.gw-toolbar-scroll{min-width:0;overflow-x:auto;scrollbar-width:thin}
+.gw-toolbar{min-width:1200px;display:grid;grid-template-columns:minmax(360px,1fr) minmax(480px,1.3fr) minmax(360px,1fr);grid-template-rows:61px 76px}
+.gw-toolgroup{display:flex;align-items:center;gap:7px;padding:6px 10px;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);min-width:0}
+.gw-toolgroup:nth-child(n+4){border-bottom:0}
+.gw-toolgroup.gw-view-group{grid-column:1 / span 2}
+.gw-toolgroup.gw-board-group{grid-column:3}
+.gw-tool-label{font:600 9px/1.2 "IBM Plex Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);align-self:flex-start;margin-top:3px;flex:none}
+.gw-compact-field{width:106px;flex:none}
+.gw-toolgroup:nth-child(3) .gw-compact-field{width:92px}
+.gw-compact-field.gw-speed-field{width:132px}
+.gw-compact-field .gw-flabel{margin:0}
+.gw-compact-field .gw-flabel label{font-size:10px;white-space:nowrap}
+.gw-compact-field .gw-flabel output{font-size:10.5px}
+.gw-compact-field input[type=range]{height:13px}
+.gw-compact-check{white-space:nowrap;margin:0;font-size:11px}
+.gw-appbar .gw-btn{padding:5px 8px;font-size:11px;white-space:nowrap}
+.gw-appbar .gw-btnrow{gap:5px}
+.gw-appbar .gw-tools{display:flex;gap:5px;flex-wrap:wrap}
+
+.gw-playground{min-height:calc(100svh - 137px);padding:14px 18px 20px;background:rgba(230,237,241,.74);border-bottom:1px solid var(--rule)}
+.gw-playground-inner{width:100%;max-width:1680px;margin:0 auto}
+.gw-story{max-width:1180px;margin:0 auto;padding:58px 20px 0;scroll-margin-top:149px}
 
 /* ---------- header ---------- */
 .gw-eyebrow{
@@ -49,16 +85,32 @@ body{
   line-height:1.02;letter-spacing:-.015em;margin:0 0 14px;max-width:16ch;
 }
 .gw-title em{font-style:italic;color:var(--teal)}
-.gw-lede{max-width:60ch;color:var(--ink2);margin:0 0 30px;font-size:16px}
+.gw-lede{max-width:72ch;color:var(--ink2);margin:0 0 30px;font-size:17px}
 .gw-lede code{font-family:"IBM Plex Mono",monospace;font-size:13.5px;background:#fff;border:1px solid var(--rule);padding:1px 5px;border-radius:var(--r)}
 
 /* ---------- layout ---------- */
-.gw-main{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:22px;align-items:start}
-@media (max-width:900px){.gw-main{grid-template-columns:minmax(0,1fr)}}
+.gw-main{display:grid;grid-template-columns:minmax(600px,1.1fr) minmax(440px,.9fr);gap:14px;align-items:stretch}
+@media (max-width:1120px){
+  .gw-appbar-inner{display:block}
+  .gw-brand{height:52px;padding:6px 14px;border-right:0;border-bottom:1px solid var(--rule);display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center}
+  .gw-brand-kicker{grid-column:2;grid-row:1}
+  .gw-brand-name{grid-row:1 / span 2;font-size:18px}
+  .gw-brand a{grid-column:2;grid-row:2;margin:0}
+  .gw-playground{min-height:calc(100svh - 189px)}
+  .gw-main{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:700px){
+  .gw-playground{padding:10px 8px 16px}
+  .gw-rail{grid-template-columns:minmax(0,1fr)!important}
+  .gw-rail .gw-trace-panel{grid-column:auto}
+  .gw-anatomy{grid-template-columns:1fr 1fr!important}
+  .gw-stage{min-height:120px}
+}
 
 .gw-card{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);box-shadow:0 1px 0 rgba(20,32,46,.05)}
-.gw-boardcard{padding:14px 14px 10px}
-.gw-rail{display:flex;flex-direction:column;gap:14px}
+.gw-boardcard{padding:12px;display:flex;flex-direction:column;min-width:0}
+.gw-rail{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-content:start}
+.gw-rail .gw-trace-panel{grid-column:1 / -1}
 
 .gw-panel{padding:15px 16px 17px}
 .gw-panel h2{
@@ -73,7 +125,7 @@ body{
 .gw-boardhead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}
 .gw-stat{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink2)}
 .gw-stat b{color:var(--ink);font-weight:600}
-#gw-svg{width:100%;height:auto;display:block;touch-action:manipulation}
+#gw-svg{width:100%;height:clamp(340px,calc(100svh - 410px),560px);min-height:340px;display:block;touch-action:manipulation}
 #gw-svg text{user-select:none}
 .gw-cellhit{cursor:crosshair}
 .gw-legend{display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--rule);
@@ -82,9 +134,9 @@ body{
   background:linear-gradient(to right,#B0234A,#E6EDF1,#0E7C6B)}
 
 /* ---------- step anatomy ---------- */
-.gw-anatomy{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:8px;
+.gw-anatomy{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;
   margin-top:10px;padding-top:10px;border-top:1px solid var(--rule)}
-.gw-stage{background:#fff;border:1px solid var(--rule);border-radius:var(--r);padding:8px 9px;min-height:96px}
+.gw-stage{background:#fff;border:1px solid var(--rule);border-radius:var(--r);padding:8px 9px;min-height:104px}
 .gw-stage.gw-live{border-color:var(--signal);box-shadow:0 0 0 1px var(--signal) inset}
 .gw-stagehead{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;letter-spacing:.13em;
   text-transform:uppercase;color:var(--ink3);margin-bottom:6px;display:flex;gap:6px;align-items:center}
@@ -150,7 +202,7 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:2px solid #fff
 
 #gw-trace{
   font-family:"IBM Plex Mono",monospace;font-size:11.5px;line-height:1.65;
-  height:240px;overflow-y:auto;background:#fff;border:1px solid var(--rule);
+  height:clamp(180px,28svh,260px);overflow-y:auto;background:#fff;border:1px solid var(--rule);
   border-radius:var(--r);padding:9px 10px;color:var(--ink2);white-space:pre-wrap;
 }
 #gw-trace .gw-good{color:var(--teal)}
@@ -183,41 +235,108 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:2px solid #fff
 </style>
 </head>
 <body>
+<header class="gw-appbar">
+  <div class="gw-appbar-inner">
+    <div class="gw-brand">
+      <span class="gw-brand-kicker">Grokking Machine Learning · ch. 2</span>
+      <strong class="gw-brand-name">Grid-world lab</strong>
+      <a href="#learn">How Q-learning works ↓</a>
+    </div>
+
+    <div class="gw-toolbar-scroll">
+      <div class="gw-toolbar" role="toolbar" aria-label="Playground controls">
+        <div class="gw-toolgroup">
+          <span class="gw-tool-label">Run</span>
+          <div class="gw-btnrow">
+            <button class="gw-btn gw-primary" id="gw-watch">Watch episode</button>
+            <button class="gw-btn" id="gw-drive">🎮 Drive</button>
+            <button class="gw-btn" id="gw-t100">+100</button>
+            <button class="gw-btn" id="gw-t1000">+1000</button>
+            <button class="gw-btn" id="gw-reset">Forget Q</button>
+          </div>
+        </div>
+
+        <div class="gw-toolgroup">
+          <span class="gw-tool-label">Learning</span>
+          <div class="gw-compact-field">
+            <div class="gw-flabel"><label for="gw-alpha">Rate α</label><output id="gw-alpha-o">0.20</output></div>
+            <input type="range" id="gw-alpha" min="0.01" max="1" step="0.01" value="0.2">
+          </div>
+          <div class="gw-compact-field">
+            <div class="gw-flabel"><label for="gw-gamma">Discount γ</label><output id="gw-gamma-o">0.90</output></div>
+            <input type="range" id="gw-gamma" min="0" max="0.99" step="0.01" value="0.9">
+          </div>
+          <div class="gw-compact-field">
+            <div class="gw-flabel"><label for="gw-eps">Explore ε</label><output id="gw-eps-o">0.20</output></div>
+            <input type="range" id="gw-eps" min="0" max="1" step="0.01" value="0.2">
+          </div>
+          <label class="gw-check gw-compact-check"><input type="checkbox" id="gw-decay" checked> Decay ε</label>
+        </div>
+
+        <div class="gw-toolgroup">
+          <span class="gw-tool-label">Rewards</span>
+          <div class="gw-compact-field">
+            <div class="gw-flabel"><label for="gw-rt">Treasure</label><output id="gw-rt-o">+100</output></div>
+            <input type="range" id="gw-rt" min="0" max="200" step="5" value="100">
+          </div>
+          <div class="gw-compact-field">
+            <div class="gw-flabel"><label for="gw-rd">Dragon</label><output id="gw-rd-o">−50</output></div>
+            <input type="range" id="gw-rd" min="-200" max="0" step="5" value="-50">
+          </div>
+          <div class="gw-compact-field">
+            <div class="gw-flabel"><label for="gw-rs">Per step</label><output id="gw-rs-o">−1</output></div>
+            <input type="range" id="gw-rs" min="-10" max="0" step="0.5" value="-1">
+          </div>
+        </div>
+
+        <div class="gw-toolgroup gw-view-group">
+          <span class="gw-tool-label">View</span>
+          <div class="gw-btnrow">
+            <button class="gw-btn gw-on" id="gw-t-arrows" aria-pressed="true">Arrows</button>
+            <button class="gw-btn" id="gw-t-nums" aria-pressed="false">Numbers</button>
+            <button class="gw-btn" id="gw-t-path" aria-pressed="false">Best path</button>
+            <button class="gw-btn" id="gw-t-iso" aria-pressed="false">Book view</button>
+          </div>
+          <div class="gw-compact-field gw-speed-field">
+            <div class="gw-flabel"><label for="gw-speed">Step speed</label><output id="gw-speed-o">160 ms</output></div>
+            <input type="range" id="gw-speed" min="0" max="400" step="20" value="160">
+          </div>
+          <label class="gw-check gw-compact-check"><input type="checkbox" id="gw-explain" checked> Narrate trace</label>
+        </div>
+
+        <div class="gw-toolgroup gw-board-group">
+          <span class="gw-tool-label">Board</span>
+          <div class="gw-tools">
+            <button class="gw-btn gw-tool gw-on" data-tool="start"><span aria-hidden="true">🤖</span> Start</button>
+            <button class="gw-btn gw-tool" data-tool="treasure"><span aria-hidden="true">💰</span> Treasure</button>
+            <button class="gw-btn gw-tool" data-tool="dragon"><span aria-hidden="true">🐉</span> Dragon</button>
+            <button class="gw-btn gw-tool" data-tool="mountain"><span aria-hidden="true">⛰️</span> Wall</button>
+            <button class="gw-btn gw-tool" data-tool="erase">Clear</button>
+            <button class="gw-btn gw-tool" data-tool="inspect"><span aria-hidden="true">🔍</span> Inspect</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
 <div class="gw-wrap">
-
-  <p class="gw-eyebrow">Reinforcement learning · grid world · Q-learning</p>
-  <h1 class="gw-title">The robot learns the board, <em>not</em> the path.</h1>
-  <p class="gw-lede">
-    No one shows it the route. It wanders, collects reward, and writes a number on every
-    <em>square + direction</em> pair — <code>Q(state, action)</code>. Train long enough and the arrows
-    below stop being noise and start being a policy: from any square, take the best-scoring direction.
-    Move the dragon, change the discount, and watch the whole field re-form.
-  </p>
-
-  <div class="gw-main">
+  <section class="gw-playground" aria-label="Interactive Q-learning playground">
+   <div class="gw-playground-inner">
+    <div class="gw-main">
 
     <!-- BOARD -->
     <section class="gw-card gw-boardcard">
       <div class="gw-boardhead">
         <div class="gw-stat">episode <b id="gw-ep">0</b> &nbsp;·&nbsp; state <b id="gw-mode">idle</b></div>
-        <div class="gw-btnrow">
-          <button class="gw-btn gw-on" id="gw-t-arrows" aria-pressed="true">Arrows</button>
-          <button class="gw-btn" id="gw-t-nums" aria-pressed="false">Numbers</button>
-          <button class="gw-btn" id="gw-t-path" aria-pressed="false">Best path</button>
-          <button class="gw-btn" id="gw-t-iso" aria-pressed="false">Book view</button>
-        </div>
+        <div class="gw-stat">choose a board tool above, then click a square</div>
       </div>
       <svg id="gw-svg" viewBox="0 0 540 440" role="img" aria-label="Grid world board showing learned action values"></svg>
       <div class="gw-legend">
         <span>low Q</span><span class="gw-ramp" aria-hidden="true"></span><span>high Q</span>
         <span style="margin-left:auto" id="gw-scale">scale ±1.0</span>
       </div>
-      <p class="gw-hint" style="margin:8px 0 2px">
-        How to read the board: every square is cut into four triangles — up, right, down, left.
-        A triangle's colour is the learned Q value for moving that way from that square
-        (green = expected gain, red = expected pain, grey = never learned). The black arrow marks the
-        direction with the highest Q right now. Toggle <b>Numbers</b> to see the raw values.
-      </p>
+      <p class="gw-hint" style="margin:6px 0 0">Each triangle is one Q(state, action): green expects gain, red expects pain, grey is unlearned. The black arrow marks the current policy.</p>
 
       <div class="gw-anatomy" id="gw-anatomy">
         <div class="gw-stage" id="gw-stage-look">
@@ -241,81 +360,9 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:2px solid #fff
 
     <!-- RAIL -->
     <div class="gw-rail">
-
-      <section class="gw-card gw-panel">
-        <h2>Run</h2>
-        <div class="gw-btnrow" style="margin-bottom:11px">
-          <button class="gw-btn gw-primary" id="gw-watch">Watch one episode</button>
-          <button class="gw-btn" id="gw-drive">🎮 Drive it yourself</button>
-          <button class="gw-btn" id="gw-t100">Train 100</button>
-          <button class="gw-btn" id="gw-t1000">Train 1000</button>
-          <button class="gw-btn" id="gw-reset">Forget everything</button>
-        </div>
-        <p class="gw-hint" style="margin:-3px 0 11px">Drive mode: steer with <b>↑ → ↓ ←</b> (or WASD), <b>Esc</b> to stop. The robot learns from <i>your</i> moves exactly as it learns from its own — every keypress runs the same Q-update.</p>
-        <div class="gw-field">
-          <div class="gw-flabel"><label for="gw-speed">Playback speed</label><output id="gw-speed-o">160 ms/step</output></div>
-          <input type="range" id="gw-speed" min="0" max="400" step="20" value="160">
-        </div>
-        <label class="gw-check"><input type="checkbox" id="gw-explain" checked> Narrate the math in the trace</label>
-        <p class="gw-hint">With this on, <b>Watch one episode</b> logs every internal decision: the explore-vs-exploit roll, the reward breakdown, and the exact Q-update arithmetic.</p>
-      </section>
-
-      <section class="gw-card gw-panel">
+      <section class="gw-card gw-panel gw-trace-panel">
         <h2>Trace <span>what the code just did</span></h2>
         <div id="gw-trace" aria-live="off"></div>
-      </section>
-
-      <section class="gw-card gw-panel">
-        <h2>Learning</h2>
-        <div class="gw-field">
-          <div class="gw-flabel"><label for="gw-alpha">Learning rate α</label><output id="gw-alpha-o">0.20</output></div>
-          <input type="range" id="gw-alpha" min="0.01" max="1" step="0.01" value="0.2">
-          <p class="gw-hint">The step size of every update: <b>new Q = old Q + α × surprise</b>. At 1.00 the latest experience overwrites everything (jumpy, trusts luck); at 0.05 Q creeps slowly but averages out randomness. 0.20 = keep 80% of what I believed, blend in 20% of what just happened.</p>
-        </div>
-        <div class="gw-field">
-          <div class="gw-flabel"><label for="gw-gamma">Discount γ</label><output id="gw-gamma-o">0.90</output></div>
-          <input type="range" id="gw-gamma" min="0" max="0.99" step="0.01" value="0.9">
-          <p class="gw-hint">How much tomorrow's reward is worth today. A reward <i>n</i> steps away counts as γⁿ of itself: at 0.90 the +100 chest is still worth ≈35 seen from ten steps out; at 0.50 it's worth ≈0.1 — effectively invisible from across the board.</p>
-        </div>
-        <div class="gw-field">
-          <div class="gw-flabel"><label for="gw-eps">Exploration ε</label><output id="gw-eps-o">0.20</output></div>
-          <input type="range" id="gw-eps" min="0" max="1" step="0.01" value="0.2">
-          <p class="gw-hint">Before every single move the robot rolls a random number: below ε → go in a <b>random</b> direction (explore), otherwise → follow the best-known Q (exploit). Exploring looks dumb in the moment, but it's the only way new routes ever get discovered.</p>
-          <label class="gw-check"><input type="checkbox" id="gw-decay" checked> Decay ε as it trains</label>
-          <p class="gw-hint">Explore a lot while young and ignorant, settle down once the Q table is trustworthy.</p>
-        </div>
-      </section>
-
-      <section class="gw-card gw-panel">
-        <h2>Rewards</h2>
-        <div class="gw-field">
-          <div class="gw-flabel"><label for="gw-rt">Treasure</label><output id="gw-rt-o">+100</output></div>
-          <input type="range" id="gw-rt" min="0" max="200" step="5" value="100">
-          <p class="gw-hint">Paid once, on the move that lands on the chest — and the episode ends there. This is the only good news in the whole world.</p>
-        </div>
-        <div class="gw-field">
-          <div class="gw-flabel"><label for="gw-rd">Dragon</label><output id="gw-rd-o">−50</output></div>
-          <input type="range" id="gw-rd" min="-200" max="0" step="5" value="-50">
-          <p class="gw-hint">Paid on the move that lands on the dragon; the episode ends there too. Standing <i>next to</i> it costs nothing — the red halo around it is learned fear, not an actual penalty.</p>
-        </div>
-        <div class="gw-field">
-          <div class="gw-flabel"><label for="gw-rs">Cost per step</label><output id="gw-rs-o">−1</output></div>
-          <input type="range" id="gw-rs" min="-10" max="0" step="0.5" value="-1">
-          <p class="gw-hint">Charged on <b>every</b> move. This is the only thing that makes short paths better than long ones — set it to 0 and the robot has no reason to hurry.</p>
-        </div>
-      </section>
-
-      <section class="gw-card gw-panel">
-        <h2>Board <span>click a square</span></h2>
-        <div class="gw-tools">
-          <button class="gw-btn gw-tool gw-on" data-tool="start"><span aria-hidden="true">🤖</span> Start</button>
-          <button class="gw-btn gw-tool" data-tool="treasure"><span aria-hidden="true">💰</span> Treasure</button>
-          <button class="gw-btn gw-tool" data-tool="dragon"><span aria-hidden="true">🐉</span> Dragon</button>
-          <button class="gw-btn gw-tool" data-tool="mountain"><span aria-hidden="true">⛰️</span> Mountain</button>
-          <button class="gw-btn gw-tool" data-tool="erase">Clear square</button>
-          <button class="gw-btn gw-tool" data-tool="inspect"><span aria-hidden="true">🔍</span> Inspect</button>
-        </div>
-        <p class="gw-hint">Editing the board wipes Q — the old numbers describe a world that no longer exists. <b>Inspect</b> only reads; it changes nothing.</p>
       </section>
 
       <section class="gw-card gw-panel">
@@ -331,15 +378,41 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:2px solid #fff
           <div class="gw-num"><b id="gw-best">—</b><small>best return</small></div>
           <div class="gw-num"><b id="gw-steps">—</b><small>steps, greedy</small></div>
         </div>
-        <p class="gw-hint" style="margin:0 0 10px"><b>return</b> = every reward in one episode summed up — the episode's score. <b>avg last 20</b> creeping upward means it's learning. <b>steps, greedy</b> = how long the path is if the robot just follows the arrows with no exploring ("—" until that path actually reaches the chest, "eaten" if it walks into the dragon).</p>
         <canvas id="gw-chart" width="600" height="128"></canvas>
         <div class="gw-chartcap">return per episode · last 200 · noisy is normal — ε keeps it gambling</div>
       </section>
 
     </div>
   </div>
+   </div>
+  </section>
+
+  <article class="gw-story" id="learn">
+  <p class="gw-eyebrow">Reinforcement learning · grid world · Q-learning</p>
+  <h1 class="gw-title">The robot learns the board, <em>not</em> the path.</h1>
+  <p class="gw-lede">
+    No one shows it the route. It wanders, collects reward, and writes a number on every
+    <em>square + direction</em> pair — <code>Q(state, action)</code>. Train long enough and the arrows
+    stop being noise and become a policy: from any square, take the best-scoring direction. Move the
+    dragon, change the discount, and watch the whole field re-form.
+  </p>
 
   <div class="gw-notes">
+    <div class="gw-note">
+      <h3>Read the board</h3>
+      <p>Every square is split into four triangles: up, right, down, and left. Each triangle's colour is the learned Q value for taking that action from that state. Green expects gain, red expects pain, and grey means the robot has not learned anything useful there yet.</p>
+      <p>The black arrow points to the largest Q in a square—the greedy policy. Turn on <b>Numbers</b> for raw values or <b>Best path</b> to follow those arrows from START.</p>
+    </div>
+    <div class="gw-note">
+      <h3>What the top bar changes</h3>
+      <p><b>α</b> controls how much one experience rewrites an old belief. <b>γ</b> controls how strongly distant rewards reach backward through the board. <b>ε</b> is the chance of ignoring Q and exploring randomly; decay lets that curiosity fade as training accumulates.</p>
+      <p>The reward controls define the world. Treasure and dragon rewards arrive when the robot lands there; the per-step cost arrives on every move and is what makes shorter routes preferable. Editing the board clears Q because the old table describes a different world.</p>
+    </div>
+    <div class="gw-note">
+      <h3>Read the score</h3>
+      <p><b>Return</b> is every reward in one episode added together. The last-20 average rising means the policy is improving even when individual exploratory runs remain noisy. <b>Steps, greedy</b> measures the route produced by following only the learned arrows.</p>
+      <p>In Drive mode, use ↑ → ↓ ← or WASD and Esc to stop. Your keypresses run the same Q-update as the robot's choices, so it can learn directly from the route you demonstrate.</p>
+    </div>
     <div class="gw-note">
       <h3>What one step does, inside</h3>
       <ol class="gw-try">
@@ -388,6 +461,7 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:2px solid #fff
   </div>
 
   <p class="gw-foot">Grid world after Grokking Machine Learning, fig. 2.11–2.12 · tabular Q-learning, ε-greedy, no dependencies</p>
+  </article>
 </div>
 
 <script>
@@ -628,7 +702,7 @@ document.addEventListener("keydown",function(ev){
 
 function pad(s,n){ while(s.length<n) s+=" "; return s; }
 function sgn(v){ var r=Math.round(v*10)/10; return (r>=0?"+":"−")+Math.abs(r); }
-function setMode(m){ document.getElementById("gw-mode").textContent=m; document.getElementById("gw-watch").textContent = playing?"Stop":"Watch one episode"; }
+function setMode(m){ document.getElementById("gw-mode").textContent=m; document.getElementById("gw-watch").textContent = playing?"Stop":"Watch episode"; }
 
 /* ---------------- colour ---------------- */
 function hex2rgb(h){return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
@@ -997,7 +1071,7 @@ function slider(id,key,fmt,after){
 slider("gw-alpha","alpha",function(v){return v.toFixed(2);});
 slider("gw-gamma","gamma",function(v){return v.toFixed(2);});
 slider("gw-eps","eps",function(v){return v.toFixed(2);});
-slider("gw-speed","speed",function(v){return v+" ms/step";});
+slider("gw-speed","speed",function(v){return v+" ms";});
 slider("gw-rt","rT",function(v){return sgn(v);},function(){render();});
 slider("gw-rd","rD",function(v){return sgn(v);},function(){render();});
 slider("gw-rs","rS",function(v){return sgn(v);});
