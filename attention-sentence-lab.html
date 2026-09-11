@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Attention Sentence Playground</title>
+    <style>
+      :root {
+        --i: #14202e;
+        --i2: #41576c;
+        --i3: #7b90a2;
+        --p: #e6edf1;
+        --w: #fbfcfc;
+        --r: #c2d2dc;
+        --t: #0e7c6b;
+        --q: #b0234a;
+        --g: #c9901a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--p);
+        background-image:
+          linear-gradient(#7896a824 1px, transparent 1px),
+          linear-gradient(90deg, #7896a824 1px, transparent 1px);
+        background-size: 26px 26px;
+        color: var(--i);
+        font:
+          15px/1.5 system-ui,
+          sans-serif;
+      }
+      .bar {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #fbfcfcf5;
+        border-bottom: 1px solid var(--r);
+        display: flex;
+        min-height: 76px;
+      }
+      .brand {
+        width: 285px;
+        padding: 8px 14px;
+        border-right: 1px solid var(--r);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .meta {
+        display: flex;
+        justify-content: space-between;
+      }
+      .k,
+      .label {
+        font: 600 9px monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--i3);
+      }
+      a {
+        color: var(--t);
+      }
+      .meta a {
+        font: 9px monospace;
+      }
+      .name,
+      h1,
+      h3 {
+        font-family: Georgia, serif;
+      }
+      .name {
+        font-size: 21px;
+        font-weight: 600;
+      }
+      .idea {
+        font-size: 12px;
+        color: var(--t);
+      }
+      .live {
+        min-width: 190px;
+        padding: 8px 14px;
+        background: #d6eae6;
+        color: var(--t);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .live b {
+        font: 600 23px monospace;
+      }
+      .live small {
+        color: var(--i2);
+      }
+      .tools {
+        display: flex;
+        overflow: auto;
+        flex: 1;
+      }
+      .group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 12px;
+        border-right: 1px solid var(--r);
+        flex: none;
+      }
+      input[type="range"] {
+        accent-color: var(--t);
+        width: 140px;
+      }
+      .btn {
+        background: #fff;
+        border: 1px solid var(--r);
+        border-radius: 3px;
+        padding: 7px 10px;
+        cursor: pointer;
+      }
+      .btn:hover,
+      .btn.on {
+        background: var(--t);
+        color: #fff;
+      }
+      .primary {
+        background: var(--i);
+        color: #fff;
+      }
+      main {
+        padding: 14px 18px 72px;
+      }
+      .main {
+        max-width: 1680px;
+        margin: auto;
+        display: grid;
+        grid-template-columns: minmax(560px, 1fr) 340px;
+        gap: 14px;
+      }
+      .card {
+        background: var(--w);
+        border: 1px solid var(--r);
+        border-radius: 3px;
+      }
+      .board,
+      .panel {
+        padding: 14px;
+      }
+      .head {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        flex-wrap: wrap;
+        font: 12px monospace;
+        color: var(--i2);
+      }
+      .visual {
+        margin: 14px 0;
+        background: #fff;
+        border: 1px solid var(--r);
+        padding: 18px;
+        min-height: 190px;
+      }
+      .attention-sentence-flow { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 14px; }
+      .attention-sentence-flow > div { border: 1px solid var(--r); padding: 12px; background: #fbfcfc; }
+      .attention-sentence-flow h3 { margin: 0 0 10px; font: 600 12px monospace; text-transform: uppercase; color: var(--i3); }
+      .sentence-tokens { display: flex; flex-wrap: wrap; gap: 6px; }
+      .sentence-token { border: 1px solid var(--r); background: #fff; padding: 8px 10px; cursor: pointer; font: 600 14px monospace; }
+      .sentence-token.selected { background: var(--t); color: #fff; border-color: var(--t); }
+      .sentence-bars { display: flex; align-items: end; gap: 8px; height: 100px; border-bottom: 1px solid var(--r); margin-top: 12px; }
+      .sentence-bars span { flex: 1; min-height: 4px; background: var(--t); position: relative; }
+      .sentence-bars span b { position: absolute; bottom: 100%; left: 0; font: 9px monospace; color: var(--i2); white-space: nowrap; }
+      .sentence-table { display: grid; gap: 4px; margin-top: 10px; font: 10px monospace; }
+      .sentence-table div { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; border-bottom: 1px dotted var(--r); padding: 3px 0; }
+      .sentence-table .selected-row { color: var(--t); font-weight: 700; }
+      .sentence-score-list { display: grid; gap: 4px; margin-top: 8px; font: 10px monospace; }
+      .sentence-score-list div { display: flex; justify-content: space-between; }
+      .sentence-context { font: 600 20px monospace; color: var(--t); padding: 24px 0; }
+      @media (max-width: 760px) { .attention-sentence-flow { grid-template-columns: 1fr; } }
+      .bars {
+        display: flex;
+        align-items: end;
+        gap: 12px;
+        height: 120px;
+      }
+      .bars i {
+        display: block;
+        width: 34px;
+        background: var(--t);
+        min-height: 3px;
+      }
+      .formula,
+      .trace {
+        background: #fff;
+        border: 1px solid var(--r);
+        border-left: 2px solid var(--t);
+        padding: 10px;
+        font: 11px/1.7 monospace;
+        white-space: pre-wrap;
+      }
+      .trace {
+        min-height: 120px;
+      }
+      .stages {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        border-top: 1px solid var(--r);
+        padding-top: 10px;
+        margin-top: 12px;
+      }
+      .stage {
+        padding: 8px;
+        border: 1px solid var(--r);
+        min-height: 80px;
+        font-size: 12px;
+        color: var(--i2);
+      }
+      .stage b {
+        display: block;
+        font: 600 10px monospace;
+        color: var(--t);
+      }
+      h2 {
+        font: 600 10px monospace;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--i3);
+        border-bottom: 1px solid var(--r);
+        padding-bottom: 8px;
+      }
+      .metric {
+        border-left: 2px solid var(--r);
+        padding-left: 9px;
+        margin: 12px 0;
+      }
+      .metric b {
+        font: 600 23px monospace;
+        display: block;
+      }
+      .metric small {
+        font: 10px monospace;
+        text-transform: uppercase;
+        color: var(--i3);
+      }
+      .note {
+        font-size: 13px;
+        color: var(--i2);
+      }
+      .story {
+        max-width: 1180px;
+        margin: auto;
+        padding: 58px 20px 0;
+      }
+      .title {
+        font-size: clamp(30px, 5vw, 52px);
+        line-height: 1.02;
+        max-width: 19ch;
+      }
+      .title em {
+        color: var(--t);
+      }
+      .lede {
+        max-width: 72ch;
+        color: var(--i2);
+        font-size: 17px;
+      }
+      .notes {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 22px;
+        border-top: 1px solid var(--r);
+        padding-top: 26px;
+        margin-top: 34px;
+      }
+      .note-block p {
+        color: var(--i2);
+        font-size: 14px;
+      }
+      .foot {
+        font: 11px monospace;
+        margin-top: 30px;
+      }
+      @media (max-width: 1050px) {
+        .bar {
+          display: block;
+        }
+        .brand {
+          width: 100%;
+          min-height: 68px;
+          border: 0;
+          border-bottom: 1px solid var(--r);
+        }
+        .tools {
+          height: 70px;
+        }
+        .main {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 660px) {
+        .stages {
+          grid-template-columns: 1fr 1fr;
+        }
+        main {
+          padding: 10px 8px;
+        }
+        .story {
+          padding-top: 36px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="bar">
+      <div class="brand">
+        <div class="meta">
+          <span class="k">LLM first principles · 10/35</span
+          ><a href="#learn">Learn ↓</a>
+        </div>
+        <strong class="name">Attention Sentence</strong
+        ><span class="idea"
+          >A selected token distributes attention across a sentence.</span
+        >
+      </div>
+      <div class="live">
+        <span class="k">Live result</span><b id="result">—</b
+        ><small id="sub">move the control</small>
+      </div>
+      <div class="tools">
+        <div class="group">
+          <span class="label">Control</span
+          ><input
+            id="control"
+            type="range"
+            min="0"
+            max="100"
+            value="50"
+          /><output id="out">50</output>
+        </div>
+        <div class="group">
+          <span class="label">Try</span
+          ><button class="btn" id="try">Example</button>
+        </div>
+        <div class="group">
+          <span class="label">Start</span
+          ><button class="btn primary" id="reset">Reset</button>
+        </div>
+      </div>
+    </header>
+    <main>
+      <div class="main">
+        <section class="card board">
+          <div class="head">
+            <span
+              >A selected token distributes attention across a sentence.</span
+            ><span>one mechanism · one visible result</span>
+          </div>
+          <div class="visual">
+            <div class="formula" id="formula"></div>
+            <div class="bars" id="bars"></div>
+            <p class="note" id="explain"></p>
+          </div>
+          <div class="stages">
+            <div class="stage"><b>1 · input</b><span id="s1"></span></div>
+            <div class="stage"><b>2 · transform</b><span id="s2"></span></div>
+            <div class="stage"><b>3 · compare</b><span id="s3"></span></div>
+            <div class="stage"><b>4 · output</b><span id="s4"></span></div>
+          </div>
+        </section>
+        <aside>
+          <section class="card panel">
+            <h2>Readout <span>current state</span></h2>
+            <div class="metric">
+              <b id="metric"></b><small>primary quantity</small>
+            </div>
+            <div class="metric">
+              <b id="secondary"></b><small>supporting quantity</small>
+            </div>
+            <p class="note" id="insight"></p>
+          </section>
+          <section class="card panel">
+            <h2>Trace <span>what just changed</span></h2>
+            <div class="trace" id="trace"></div>
+          </section>
+        </aside>
+      </div>
+      <article class="story" id="learn">
+        <p class="k">LLM first principles · Attention Sentence Playground</p>
+        <h1 class="title">
+          Attention Sentence makes one hidden mechanism <em>visible.</em>
+        </h1>
+        <p class="lede">
+          A selected token distributes attention across a sentence. This
+          playground keeps the moving parts small so the calculation can be
+          followed from input to output.
+        </p>
+        <div class="notes">
+          <section class="note-block">
+            <h3>Read the playground</h3>
+            <p>
+              Move the control and watch the highlighted result change. The four
+              stages describe the mechanism in the same order as the code.
+            </p>
+          </section>
+          <section class="note-block">
+            <h3>What this isolates</h3>
+            <p>
+              A selected token distributes attention across a sentence. The toy
+              values are teaching data; real models use larger vectors,
+              matrices, vocabularies, and datasets.
+            </p>
+          </section>
+          <section class="note-block">
+            <h3>Why it matters</h3>
+            <p>
+              This mechanism is one link in the first-principles chain from text
+              to tokens, vectors, attention, prediction, and learning.
+            </p>
+          </section>
+          <section class="note-block">
+            <h3>Terms</h3>
+            <p>
+              <b>input</b> is what enters the operation. <b>transform</b> is the
+              calculation. <b>output</b> is what the next mechanism receives.
+            </p>
+          </section>
+          <section class="note-block">
+            <h3>Try this</h3>
+            <ol>
+              <li>Move the control slowly and narrate each stage.</li>
+              <li>Press Example to jump to a contrasting state.</li>
+              <li>Reset and reproduce the change from the beginning.</li>
+            </ol>
+          </section>
+          <section class="note-block">
+            <h3>A short history</h3>
+            <p>
+              Soft attention became prominent in sequence-to-sequence translation through Bahdanau, Cho, and Bengio's 2014 work. The 2017 Transformer paper then made attention over token sequences the central operation behind modern language models.
+              <a href="https://arxiv.org/abs/1409.0473" target="_blank" rel="noopener">Bahdanau et al. ↗</a>
+              <a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Transformer paper ↗</a>
+            </p>
+          </section>
+        </div>
+        <p class="foot">
+          <a href="index.html">← Playground explorer</a> ·
+          <a href="llm-playground-roadmap.md">Learning roadmap</a>
+        </p>
+      </article>
+    </main>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      let v = 50;
+      const kind = "token";
+      function render(action = "Moved control") {
+        let x = v / 100,
+          a = 0,
+          b = 0,
+          label = "value";
+        if (kind === "temperature") {
+          a = (1 - x) * 0.9;
+          b = x * 1.4;
+          label = "temperature";
+        } else if (kind === "probability") {
+          a = Math.max(0.001, x);
+          b = -Math.log(a);
+          label = "loss";
+        } else if (kind === "learning") {
+          a = (x - 0.6) * 2;
+          b = Math.abs(a);
+          label = "weight";
+        } else if (kind === "model") {
+          a = Math.round(2 + x * 10);
+          b = a * a * 64;
+          label = "parameters";
+        } else if (kind === "window") {
+          a = Math.round(1 + x * 15);
+          b = Math.max(0, 16 - a);
+          label = "tokens used";
+        } else if (kind === "rank") {
+          a = Math.round(1 + x * 4);
+          b = 1 / (a + 0.5);
+          label = "rank";
+        } else if (kind === "evidence") {
+          a = x;
+          b = Math.max(0, 0.9 - a * 0.8);
+          label = "confidence";
+        } else {
+          a = x;
+          b = Math.sin(x * Math.PI * 2);
+          label = "score";
+        }
+        $("result").textContent = typeof a === "number" ? a.toFixed(3) : a;
+        $("metric").textContent = a.toFixed(3);
+        $("secondary").textContent = b.toFixed(3);
+        $("out").textContent = v;
+        $("sub").textContent = label;
+        $("formula").textContent =
+          kind === "temperature"
+            ? "probability ∝ exp(score / temperature)"
+            : kind === "probability"
+              ? "loss = −log(correct probability)"
+              : kind === "learning"
+                ? "new weight = old weight − learning rate × gradient"
+                : kind === "model"
+                  ? "parameters ≈ layers × width²"
+                  : "calculation: input → output";
+        const heights = [
+          Math.abs(a),
+          Math.abs(b),
+          Math.abs(a - b),
+          Math.abs(a + b),
+        ].map((z) => Math.min(100, Math.max(3, z * 70)));
+        $("bars").innerHTML = heights
+          .map((h, i) => '<i style="height:' + h + 'px"></i>')
+          .join("");
+        $("explain").textContent =
+          "The control changes " +
+          label +
+          "; the resulting quantity is visible immediately.";
+        $("s1").textContent = "Control value = " + v + ".";
+        $("s2").textContent = "Apply the toy " + kind + " calculation.";
+        $("s3").textContent = "Inspect the intermediate quantities.";
+        $("s4").textContent = "Output = " + a.toFixed(3) + ".";
+        $("insight").textContent =
+          "This is a small teaching model, not a production-scale implementation.";
+        $("trace").textContent = [
+          action,
+          "Control: " + v,
+          "Primary: " + a.toFixed(3),
+          "Secondary: " + b.toFixed(3),
+        ].join("\\n");
+      }
+      $("control").oninput = (e) => {
+        v = +e.target.value;
+        render("Changed control");
+      };
+      $("try").onclick = () => {
+        v = 80;
+        $("control").value = 80;
+        render("Loaded example");
+      };
+      $("reset").onclick = () => {
+        v = 50;
+        $("control").value = 50;
+        render("Reset");
+      };
+      render();
+    </script>
+    <script>
+      const sentenceVisual = document.querySelector('.visual');
+      sentenceVisual.innerHTML = '<div class="attention-sentence-flow"><div class="sentence-input"><h3>Input · Q, K, V</h3><div class="sentence-tokens" id="sentenceTokens"></div><p class="note" id="sentenceQ"></p><div class="sentence-table" id="sentenceTable"></div><p class="note">The selected token supplies Q. Every row supplies a K and a V.</p></div><div class="sentence-transform"><h3>Transform · attend</h3><div class="formula" id="sentenceFormula"></div><div class="sentence-score-list" id="sentenceScores"></div><div class="sentence-bars" id="sentenceBars"></div><p class="note" id="sentenceExplain"></p></div><div class="sentence-output"><h3>Output · context vector</h3><div class="sentence-context" id="sentenceContext"></div><p class="note">The weighted sum of the visible V vectors.</p></div></div>';
+      const sentenceWords = ['the', 'cat', 'sat', 'outside'];
+      const sentenceTokens = document.getElementById('sentenceTokens');
+      sentenceTokens.innerHTML = sentenceWords.map((word, i) => '<button class="sentence-token" data-index="' + i + '">' + word + '</button>').join('');
+      function renderSentence(action = 'Changed selected token') {
+        const selected = Math.min(3, Math.floor((+document.getElementById('control').value / 100) * 4));
+        const q = [selected * .7 + .2, 1];
+        const keys = sentenceWords.map((_, i) => [i * .55 + .1, i === selected ? 1 : .35]);
+        const values = sentenceWords.map((_, i) => [i / 3, 1 - i / 4]);
+        const scores = keys.map(k => q[0] * k[0] + q[1] * k[1]);
+        const exps = scores.map(s => Math.exp(s));
+        const total = exps.reduce((s, n) => s + n, 0);
+        const weights = exps.map(n => n / total);
+        const context = values.reduce((o, val, i) => [o[0] + weights[i] * val[0], o[1] + weights[i] * val[1]], [0, 0]);
+        sentenceTokens.querySelectorAll('button').forEach((b, i) => b.classList.toggle('selected', i === selected));
+        document.getElementById('sentenceQ').textContent = 'Q(' + sentenceWords[selected] + ') = [' + q.map(n => n.toFixed(2)).join(', ') + ']';
+        document.getElementById('sentenceTable').innerHTML = '<div><b>token</b><b>K</b><b>V</b></div>' + sentenceWords.map((word, i) => '<div class="' + (i === selected ? 'selected-row' : '') + '"><span>' + word + (i === selected ? ' · Q' : '') + '</span><span>[' + keys[i].map(n => n.toFixed(2)).join(', ') + ']</span><span>[' + values[i].map(n => n.toFixed(2)).join(', ') + ']</span></div>').join('');
+        document.getElementById('sentenceFormula').textContent = 'scores = Q · Kᵀ\nweights = softmax(scores)';
+        document.getElementById('sentenceScores').innerHTML = scores.map((score, i) => '<div><span>Q · K(' + sentenceWords[i] + ')</span><b>' + score.toFixed(3) + '</b></div>').join('');
+        document.getElementById('sentenceBars').innerHTML = weights.map((w, i) => '<span style="height:' + Math.max(4, w * 90) + 'px"><b>' + sentenceWords[i] + ' ' + w.toFixed(2) + '</b></span>').join('');
+        document.getElementById('sentenceContext').textContent = '[' + context.map(n => n.toFixed(3)).join(', ') + ']';
+        document.getElementById('sentenceExplain').textContent = '“' + sentenceWords[selected] + '” compares with every token, then gathers a weighted context.';
+        document.getElementById('result').textContent = sentenceWords[selected];
+        document.getElementById('sub').textContent = 'selected query token';
+        document.getElementById('out').textContent = selected;
+        document.getElementById('metric').textContent = Math.max(...weights).toFixed(3);
+        document.getElementById('secondary').textContent = context[0].toFixed(3);
+        document.getElementById('s1').textContent = 'Selected token = “' + sentenceWords[selected] + '”.';
+        document.getElementById('s2').textContent = 'Compare its query with all four keys.';
+        document.getElementById('s3').textContent = 'Weights = [' + weights.map(w => w.toFixed(2)).join(', ') + '].';
+        document.getElementById('s4').textContent = 'Context output = [' + context.map(n => n.toFixed(2)).join(', ') + '].';
+        document.getElementById('insight').textContent = 'Attention is a weighted read from the whole sentence, not a single word lookup.';
+        document.getElementById('trace').textContent = [action, 'Query token: ' + sentenceWords[selected], 'Weights: [' + weights.map(w => w.toFixed(3)).join(', ') + ']', 'Context: [' + context.map(n => n.toFixed(3)).join(', ') + ']'].join('\n');
+      }
+      sentenceTokens.querySelectorAll('button').forEach((button) => button.addEventListener('click', () => { document.getElementById('control').value = (+button.dataset.index + .5) * 25; renderSentence('Clicked “' + button.textContent + '”'); }));
+      document.getElementById('control').oninput = () => renderSentence();
+      document.getElementById('try').onclick = () => { document.getElementById('control').value = 62; renderSentence('Loaded example'); };
+      document.getElementById('reset').onclick = () => { document.getElementById('control').value = 12; renderSentence('Reset'); };
+      renderSentence('Ready');
+    </script>
+  </body>
+</html>

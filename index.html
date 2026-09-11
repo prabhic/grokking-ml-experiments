@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ML playground explorer</title>
+    <style>
+      :root {
+        --ink: #14202e;
+        --ink2: #41576c;
+        --muted: #7b90a2;
+        --paper: #e6edf1;
+        --panel: #fbfcfc;
+        --rule: #c2d2dc;
+        --teal: #0e7c6b;
+        --r: 3px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        background: var(--paper);
+        background-image:
+          linear-gradient(#7896a824 1px, transparent 1px),
+          linear-gradient(90deg, #7896a824 1px, transparent 1px);
+        background-size: 26px 26px;
+        color: var(--ink);
+        font:
+          14px/1.45 system-ui,
+          sans-serif;
+        overflow: hidden;
+      }
+      .shell {
+        height: 100%;
+        display: flex;
+      }
+      .sidebar {
+        width: 310px;
+        flex: none;
+        background: #101827;
+        border-right: 1px solid #2e4055;
+        color: #eef4ff;
+        display: flex;
+        flex-direction: column;
+        transition:
+          width 0.2s,
+          transform 0.2s;
+        z-index: 4;
+      }
+      .sidebar.collapsed {
+        width: 0;
+        overflow: hidden;
+        border: 0;
+      }
+      .side-head {
+        padding: 18px 16px 14px;
+        border-bottom: 1px solid #2e4055;
+      }
+      .kicker,
+      .section-title {
+        font: 600 9px monospace;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+        color: #8fa6bd;
+      }
+      h1 {
+        font:
+          600 25px/1.05 Georgia,
+          serif;
+        margin: 5px 0 7px;
+      }
+      .side-head p {
+        color: #a9b9ca;
+        font-size: 12px;
+        margin: 0;
+      }
+      .nav {
+        overflow: auto;
+        padding: 12px;
+      }
+      .section-title {
+        padding: 8px 7px 6px;
+        color: #8fa6bd;
+      }
+      .item {
+        display: block;
+        width: 100%;
+        text-align: left;
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: var(--r);
+        padding: 9px 8px;
+        margin-bottom: 3px;
+        color: #eef4ff;
+        cursor: pointer;
+        font: inherit;
+      }
+      .item:hover {
+        background: #1b2a3d;
+        border-color: #38506a;
+      }
+      .item.active {
+        background: #174f4b;
+        border-color: #2d9181;
+      }
+      .item strong {
+        display: block;
+        font:
+          600 13px Georgia,
+          serif;
+      }
+      .item small {
+        display: block;
+        color: #a9b9ca;
+        font-size: 11px;
+        margin-top: 2px;
+      }
+      .side-foot {
+        margin-top: auto;
+        border-top: 1px solid #2e4055;
+        padding: 10px 16px;
+        font: 10px monospace;
+        color: #8197ad;
+      }
+      .workspace {
+        min-width: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+      .topbar {
+        height: 58px;
+        flex: none;
+        background: #fbfcfcf5;
+        border-bottom: 1px solid var(--rule);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+      }
+      .toggle {
+        background: #fff;
+        border: 1px solid var(--rule);
+        border-radius: var(--r);
+        padding: 7px 10px;
+        cursor: pointer;
+        color: var(--ink);
+      }
+      .toggle:hover {
+        background: #edf3f4;
+      }
+      .crumb {
+        min-width: 0;
+        flex: 1;
+      }
+      .crumb strong {
+        font:
+          600 17px Georgia,
+          serif;
+      }
+      .crumb small {
+        display: block;
+        color: var(--muted);
+        font: 10px monospace;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .open-link {
+        font: 11px monospace;
+        color: var(--teal);
+        text-decoration: none;
+        border: 1px solid var(--rule);
+        padding: 6px 9px;
+        background: #fff;
+        border-radius: var(--r);
+      }
+      .frame {
+        min-height: 0;
+        flex: 1;
+        position: relative;
+      }
+      iframe {
+        border: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        background: var(--paper);
+      }
+      .empty {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        color: var(--ink2);
+        pointer-events: none;
+      }
+      .empty span {
+        background: #ffffffcc;
+        border: 1px solid var(--rule);
+        padding: 18px;
+      }
+      @media (max-width: 760px) {
+        body {
+          overflow: auto;
+        }
+        .shell {
+          min-height: 100%;
+          height: auto;
+        }
+        .sidebar {
+          position: fixed;
+          inset: 0 auto 0 0;
+          box-shadow: 4px 0 18px #14202e22;
+        }
+        .sidebar.collapsed {
+          transform: translateX(-100%);
+          width: 310px;
+        }
+        .workspace {
+          min-height: 100vh;
+        }
+        .topbar {
+          position: sticky;
+          top: 0;
+          z-index: 3;
+        }
+        .open-link {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar" id="sidebar">
+        <div class="side-head">
+          <div class="kicker">Book study · personal labs</div>
+          <h1>Playground explorer</h1>
+          <p>Book chapters stay distinct from the experiments built while learning beyond the book.</p>
+        </div>
+        <nav class="nav" aria-label="Playground explorer">
+          <div class="section-title">From Grokking Machine Learning</div>
+          <button
+            class="item"
+            data-file="grid-world-rl.html"
+            data-title="Grid-world RL"
+            data-desc="Q-learning · chapter 2"
+          >
+            <strong>Grid-world RL</strong
+            ><small>Q-learning, rewards, exploration</small></button
+          ><button
+            class="item"
+            data-file="linear-regression-lab.html"
+            data-title="Line-fit lab"
+            data-desc="Gradient descent · chapter 3"
+          >
+            <strong>Line-fit lab</strong
+            ><small>Regression, error, gradient descent</small>
+          </button>
+          <div class="section-title">My learning playgrounds · foundations</div>
+          <button class="item" data-file="wave-frequency-phase-playground.html" data-title="Wave frequency & phase" data-desc="Signal basics · foundation">
+            <strong>Wave: amplitude, frequency, phase</strong><small>See how a signal changes over time</small>
+          </button>
+          <div class="section-title">My learning playgrounds · LLM concepts</div>
+          <button
+            class="item"
+            data-file="cosine-similarity-lab.html"
+            data-title="Cosine-similarity lab"
+            data-desc="Vector geometry · #1"
+          >
+            <strong>Cosine similarity</strong
+            ><small>Dot product, angle, direction</small></button
+          ><button
+            class="item"
+            data-file="word-embedding-lab.html"
+            data-title="Word-embedding lab"
+            data-desc="Words → vectors · #2"
+          >
+            <strong>Word embeddings</strong
+            ><small>Words become points</small></button
+          ><button
+            class="item"
+            data-file="embedding-dimensions-lab.html"
+            data-title="Dimensions lab"
+            data-desc="Many coordinates · #3"
+          >
+            <strong>Embedding dimensions</strong
+            ><small>Why one word needs many numbers</small></button
+          ><button
+            class="item"
+            data-file="feature-vs-embedding-lab.html"
+            data-title="Feature vs embedding lab"
+            data-desc="Features and dimensions · #3A"
+          >
+            <strong>Features vs dimensions</strong
+            ><small>Named features versus learned coordinates</small></button
+          ><button
+            class="item"
+            data-file="embedding-scale-lab.html"
+            data-title="Embedding scale lab"
+            data-desc="Magnitude and normalization · #3B"
+          >
+            <strong>Embedding scale</strong
+            ><small>Raw values, length, normalization</small></button
+          ><button
+            class="item"
+            data-file="tokenization-lab.html"
+            data-title="Tokenization lab"
+            data-desc="Text → tokens · #4"
+          >
+            <strong>Tokenization</strong
+            ><small>Words, pieces, punctuation, IDs</small></button
+          ><button
+            class="item"
+            data-file="token-embedding-lookup-lab.html"
+            data-title="Token lookup lab"
+            data-desc="Token ID → vector · #5"
+          >
+            <strong>Token embedding lookup</strong
+            ><small>Embedding table row retrieval</small></button
+          ><button
+            class="item"
+            data-file="positional-encoding-lab.html"
+            data-title="Position lab"
+            data-desc="Order enters the model · #6"
+          >
+            <strong>Positional encoding</strong
+            ><small>Token vector plus position signal</small></button
+          ><button
+            class="item"
+            data-file="position-index-to-vector-lab.html"
+            data-title="Index-to-vector lab"
+            data-desc="Scalar index → vector signal · 6-bridge"
+          >
+            <strong>Index → vector bridge</strong
+            ><small>Why position needs a vector signal</small></button
+          ><button
+            class="item"
+            data-file="learned-positional-embedding-lab.html"
+            data-title="Learned position lab"
+            data-desc="Position table lookup · #6A"
+          >
+            <strong>Learned positions</strong
+            ><small>Position index retrieves a row</small></button
+          ><button
+            class="item"
+            data-file="rotary-position-encoding-lab.html"
+            data-title="Rotary position lab"
+            data-desc="RoPE · #6B"
+          >
+            <strong>Rotary positions</strong
+            ><small>Rotate queries and keys</small></button
+          ><button
+            class="item"
+            data-file="number-to-circle-lab.html"
+            data-title="Number-to-circle lab"
+            data-desc="Unit circle intuition · 6C0"
+          >
+            <strong>Number → circle</strong
+            ><small>Angle becomes [cos θ, sin θ]</small></button
+          ><button
+            class="item"
+            data-file="waves-and-position-lab.html"
+            data-title="Waves and position lab"
+            data-desc="Sine/cosine intuition · 6C-bridge"
+          >
+            <strong>Waves and position</strong
+            ><small>How smooth signals encode position</small></button
+          ><button
+            class="item"
+            data-file="sinusoidal-position-encoding-lab.html"
+            data-title="Sinusoidal position lab"
+            data-desc="Sine/cosine formula · #6C"
+          >
+            <strong>Sinusoidal positions</strong
+            ><small>Fixed waves, no position table</small>
+          </button>
+          <button class="item" data-file="query-key-similarity-lab.html" data-title="Query-key similarity lab" data-desc="Attention scoring · #7"><strong>Query-key similarity</strong><small>Which keys match a query?</small></button>
+          <button class="item" data-file="softmax-lab.html" data-title="Softmax lab" data-desc="Scores → probabilities · #8"><strong>Softmax</strong><small>Turn scores into competing probabilities</small></button>
+          <button class="item" data-file="single-head-attention-lab.html" data-title="Single-head attention lab" data-desc="Q, K, V · #9"><strong>Single-head attention</strong><small>Score, normalize, mix values</small></button>
+          <button class="item" data-file="attention-sentence-lab.html" data-title="Attention sentence lab" data-desc="Attention in a sentence · #10"><strong>Attention in a sentence</strong><small>See which tokens receive focus</small></button>
+          <button class="item" data-file="multi-head-attention-lab.html" data-title="Multi-head attention lab" data-desc="Several heads · #11"><strong>Multi-head attention</strong><small>Different heads, different relationships</small></button>
+          <button class="item" data-file="residual-connection-lab.html" data-title="Residual connection lab" data-desc="Skip paths · #12"><strong>Residual connections</strong><small>Keep the original signal alive</small></button>
+          <button class="item" data-file="layer-normalization-lab.html" data-title="Layer normalization lab" data-desc="Stable vector scale · #13"><strong>Layer normalization</strong><small>Center and scale a vector</small></button>
+          <button class="item" data-file="feed-forward-network-lab.html" data-title="Feed-forward network lab" data-desc="Linear → nonlinear → linear · #14"><strong>Feed-forward network</strong><small>Transform each token independently</small></button>
+          <button class="item" data-file="transformer-block-lab.html" data-title="Transformer block lab" data-desc="One complete layer · #15"><strong>Transformer block</strong><small>Attention, FFN, norm and residuals</small></button>
+          <button class="item" data-file="next-token-prediction-lab.html" data-title="Next-token prediction lab" data-desc="Hidden state → logits · #16"><strong>Next-token prediction</strong><small>Scores for the next vocabulary item</small></button>
+          <button class="item" data-file="logits-softmax-lab.html" data-title="Logits to softmax lab" data-desc="Scores → probabilities · #17"><strong>Logits → softmax</strong><small>Temperature changes confidence</small></button>
+          <button class="item" data-file="sampling-lab.html" data-title="Sampling lab" data-desc="Temperature, top-k, top-p · #18"><strong>Sampling</strong><small>Choose among likely next tokens</small></button>
+          <button class="item" data-file="context-window-lab.html" data-title="Context window lab" data-desc="What the model can see · #19"><strong>Context window</strong><small>Add and remove visible tokens</small></button>
+          <button class="item" data-file="causal-mask-lab.html" data-title="Causal mask lab" data-desc="Hide the future · #20"><strong>Causal mask</strong><small>Prevent looking ahead</small></button>
+          <button class="item" data-file="loss-lab.html" data-title="Loss lab" data-desc="Prediction error · #21"><strong>Loss</strong><small>How wrong is the prediction?</small></button>
+          <button class="item" data-file="gradient-descent-lab.html" data-title="Gradient descent lab" data-desc="Weights improve · #22"><strong>Gradient descent</strong><small>Follow the slope downhill</small></button>
+          <button class="item" data-file="single-neuron-training-lab.html" data-title="Single-neuron training lab" data-desc="Forward, loss, update · #23"><strong>Single-neuron training</strong><small>One complete learning loop</small></button>
+          <button class="item" data-file="tiny-language-model-training-lab.html" data-title="Tiny language model training lab" data-desc="Repeated next-token learning · #24"><strong>Tiny language model</strong><small>Watch a toy corpus shape predictions</small></button>
+          <button class="item" data-file="backpropagation-lab.html" data-title="Backpropagation lab" data-desc="Error flows backward · #25"><strong>Backpropagation</strong><small>Trace gradients through a graph</small></button>
+          <button class="item" data-file="model-parameters-lab.html" data-title="Model parameters lab" data-desc="Matrices and layers · #26"><strong>Model parameters</strong><small>Where billions of numbers come from</small></button>
+          <button class="item" data-file="kv-cache-lab.html" data-title="KV cache lab" data-desc="Reuse past work · #27"><strong>KV cache</strong><small>Generate efficiently one token at a time</small></button>
+          <button class="item" data-file="prompt-context-lab.html" data-title="Prompt context lab" data-desc="Messages become a sequence · #28"><strong>Prompt context</strong><small>System, user and history together</small></button>
+          <button class="item" data-file="rag-similarity-lab.html" data-title="RAG similarity lab" data-desc="Query and document vectors · #29"><strong>RAG similarity</strong><small>Retrieve by semantic direction</small></button>
+          <button class="item" data-file="chunking-lab.html" data-title="Chunking lab" data-desc="Documents become pieces · #30"><strong>Chunking</strong><small>Overlap and chunk size matter</small></button>
+          <button class="item" data-file="semantic-retrieval-lab.html" data-title="Semantic retrieval lab" data-desc="Rank candidate chunks · #31"><strong>Semantic retrieval</strong><small>Compare and rank chunks</small></button>
+          <button class="item" data-file="fine-tuning-lab.html" data-title="Fine-tuning lab" data-desc="Examples change behavior · #32"><strong>Fine-tuning</strong><small>Training versus prompting</small></button>
+          <button class="item" data-file="lora-lab.html" data-title="LoRA lab" data-desc="Low-rank adapters · #33"><strong>LoRA</strong><small>Small updates on a large base</small></button>
+          <button class="item" data-file="rlhf-preference-lab.html" data-title="RLHF preference lab" data-desc="Preferences shape rewards · #34"><strong>RLHF / preference</strong><small>Choose which answer is preferred</small></button>
+          <button class="item" data-file="hallucination-lab.html" data-title="Hallucination lab" data-desc="Confidence versus evidence · #35"><strong>Hallucination</strong><small>Prediction is not fact lookup</small></button>
+        </nav>
+        <div class="side-foot">Standalone HTML files · no build step</div>
+      </aside>
+      <section class="workspace">
+        <header class="topbar">
+          <button
+            class="toggle"
+            id="toggle"
+            aria-label="Toggle playground explorer"
+            aria-expanded="true"
+          >
+            ☰ Explorer
+          </button>
+          <div class="crumb">
+            <strong id="current">Choose a playground</strong
+            ><small id="desc">The selected experiment opens here.</small>
+          </div>
+          <a class="open-link" id="open" href="" target="_blank" rel="noopener"
+            >Open standalone ↗</a
+          >
+        </header>
+        <div class="frame">
+          <div class="empty" id="empty" aria-hidden="true"></div>
+          <iframe id="frame" title="Selected playground" hidden></iframe>
+        </div>
+      </section>
+    </div>
+    <script>
+      const $ = (id) => document.getElementById(id),
+        sidebar = $("sidebar"),
+        frame = $("frame"),
+        empty = $("empty");
+      function openLab(button) {
+        document
+          .querySelectorAll(".item")
+          .forEach((x) => x.classList.remove("active"));
+        button.classList.add("active");
+        frame.src = button.dataset.file;
+        frame.hidden = false;
+        empty.hidden = true;
+        $("current").textContent = button.dataset.title;
+        $("desc").textContent = button.dataset.desc;
+        $("open").href = button.dataset.file;
+      }
+      document
+        .querySelectorAll(".item")
+        .forEach((button) =>
+          button.addEventListener("click", () => openLab(button)),
+        );
+      $("toggle").addEventListener("click", () => {
+        const collapsed = sidebar.classList.toggle("collapsed");
+        $("toggle").setAttribute("aria-expanded", String(!collapsed));
+      });
+      openLab(
+        document.querySelector('[data-file="linear-regression-lab.html"]'),
+      );
+    </script>
+  </body>
+</html>

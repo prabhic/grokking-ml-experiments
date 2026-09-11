@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wave, Numbers, and Phase Playground</title>
+<style>
+  :root{
+    --bg:#0b1020;
+    --panel:#121a2d;
+    --panel2:#0f1628;
+    --text:#eef4ff;
+    --muted:#9fb0cc;
+    --line:#2b3a59;
+    --accent:#73d5ff;
+    --accent2:#ffd166;
+    --accent3:#9cf6c7;
+    --danger:#ff7b8b;
+    --good:#9cf6c7;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(115,213,255,.08), transparent 28rem),
+      radial-gradient(circle at 100% 20%, rgba(255,209,102,.08), transparent 30rem),
+      var(--bg);
+    color:var(--text);
+    min-height:100vh;
+  }
+  .wrap{max-width:1450px;margin:0 auto;padding:28px}
+  h1{font-size:clamp(26px,3vw,46px);margin:0 0 8px;letter-spacing:-.03em}
+  .sub{
+    color:var(--muted);font-size:16px;line-height:1.6;margin-bottom:22px;
+  }
+  .formula{
+    display:inline-flex;gap:10px;align-items:center;flex-wrap:wrap;
+    background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+    padding:10px 14px;border-radius:14px;margin-top:10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .insight{
+    margin-top:18px;
+    background:rgba(156,246,199,.08);
+    border:1px solid rgba(156,246,199,.18);
+    border-radius:16px;
+    padding:14px 16px;
+    line-height:1.6;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:340px 1fr;
+    gap:20px;
+  }
+  .panel{
+    background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.018));
+    border:1px solid rgba(255,255,255,.085);
+    border-radius:20px;
+    box-shadow:0 18px 60px rgba(0,0,0,.25);
+  }
+  .controls{padding:22px}
+  .controls h2,.viz h2{font-size:18px;margin:0 0 14px}
+  .control{margin:18px 0 22px}
+  .control label{display:flex;justify-content:space-between;gap:12px;font-weight:700;margin-bottom:10px}
+  .value{color:var(--accent2);font-variant-numeric:tabular-nums}
+  input[type="range"]{width:100%;accent-color:var(--accent)}
+  .hint{font-size:13px;color:var(--muted);line-height:1.45;margin-top:8px}
+  .buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  button{
+    border:1px solid rgba(255,255,255,.1);
+    background:#18233b;color:var(--text);padding:10px 14px;border-radius:12px;
+    cursor:pointer;font-weight:700
+  }
+  button:hover{background:#1f2d4a}
+  .stats{
+    display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px
+  }
+  .stat{
+    background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);
+    padding:12px;border-radius:14px
+  }
+  .stat .k{font-size:12px;color:var(--muted);margin-bottom:4px}
+  .stat .v{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}
+  .viz{padding:18px}
+  .topviz{
+    display:grid;
+    grid-template-columns:minmax(320px,.9fr) minmax(520px,1.6fr);
+    gap:16px;
+  }
+  .bottomviz{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+    margin-top:16px;
+  }
+  .card{
+    background:var(--panel2);
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:16px;
+    padding:14px;
+    overflow:hidden;
+  }
+  .card h3{font-size:14px;margin:0 0 10px;color:#dce8fb}
+  canvas{display:block;width:100%;height:auto;border-radius:12px;background:rgba(255,255,255,.01)}
+  .chips{
+    margin-top:10px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .chip{
+    padding:7px 10px;
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:999px;
+    color:#eef4ff;
+    font-size:13px;
+    font-variant-numeric: tabular-nums;
+  }
+  .equation-row{
+    margin-top:10px;
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.5;
+  }
+  .slider-bank{
+    margin-top:10px;
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px 14px;
+  }
+  .mini{
+    background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.06);
+    padding:10px;
+    border-radius:12px;
+  }
+  .mini label{
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+    color:#dce8fb;
+    margin-bottom:6px;
+    gap:6px;
+  }
+  .mini .n{
+    color:var(--accent2);
+    font-variant-numeric:tabular-nums;
+  }
+  .explain{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px
+  }
+  .ex{
+    padding:14px;border-radius:14px;background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.06)
+  }
+  .ex b{display:block;margin-bottom:5px}
+  .ex small{color:var(--muted);line-height:1.45}
+  .footer-note{
+    margin-top:14px;color:var(--muted);font-size:13px;line-height:1.6
+  }
+  .mono{
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (max-width: 1100px){
+    .grid{grid-template-columns:1fr}
+    .topviz,.bottomviz{grid-template-columns:1fr}
+  }
+  @media (max-width: 700px){
+    .wrap{padding:16px}
+    .stats,.explain,.slider-bank{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Wave ↔ Numbers Playground</h1>
+  <div class="sub">
+    This playground connects four views of the same idea:
+    <strong>circle</strong> → <strong>smooth wave</strong> → <strong>sampled numbers</strong> → <strong>number sequence as a signal</strong>.
+    <div class="formula">x(t) = A · sin(2πft + φ)</div>
+  </div>
+
+  <div class="insight">
+    <strong>Core insight:</strong><br>
+    1. A smooth wave can be turned into a <strong>sequence of numbers</strong> by sampling its height at regular times.<br>
+    2. A <strong>sequence of numbers</strong> can be drawn across time and treated as a <strong>signal</strong> — a wave-like changing quantity.<br>
+    So, wave and number-sequence are two views of the same thing.
+  </div>
+
+  <div class="grid">
+    <section class="panel controls">
+      <h2>Main Wave Controls</h2>
+
+      <div class="control">
+        <label>Amplitude A <span class="value" id="ampVal">1.00</span></label>
+        <input id="amp" type="range" min="0.2" max="2" value="1" step="0.05">
+        <div class="hint">How tall the wave is. Also behaves like the circle radius.</div>
+      </div>
+
+      <div class="control">
+        <label>Frequency f <span class="value" id="freqVal">1.00 Hz</span></label>
+        <input id="freq" type="range" min="0.1" max="4" value="1" step="0.05">
+        <div class="hint">How many complete cycles happen every second.</div>
+      </div>
+
+      <div class="control">
+        <label>Phase φ <span class="value" id="phaseVal">0°</span></label>
+        <input id="phase" type="range" min="0" max="360" value="0" step="1">
+        <div class="hint">Where on the circle / cycle the wave starts.</div>
+      </div>
+
+      <div class="control">
+        <label>Time t <span class="value" id="timeVal">0.00 s</span></label>
+        <input id="time" type="range" min="0" max="4" value="0" step="0.002">
+        <div class="hint">Scrub through time manually, or press Play.</div>
+      </div>
+
+      <div class="control">
+        <label>Sample count <span class="value" id="sampleCountVal">12</span></label>
+        <input id="sampleCount" type="range" min="4" max="20" value="12" step="1">
+        <div class="hint">How many numbers we take from the smooth wave.</div>
+      </div>
+
+      <div class="buttons">
+        <button id="playBtn">▶ Play</button>
+        <button id="resetBtn">↺ Reset</button>
+        <button id="quarterBtn">Set phase 90°</button>
+        <button id="copySineBtn">Copy sine samples → sequence editor</button>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="k">Current angle</div>
+          <div class="v" id="angleStat">0°</div>
+        </div>
+        <div class="stat">
+          <div class="k">Current wave value</div>
+          <div class="v" id="waveStat">0.000</div>
+        </div>
+        <div class="stat">
+          <div class="k">Period</div>
+          <div class="v" id="periodStat">1.000 s</div>
+        </div>
+        <div class="stat">
+          <div class="k">Cycles elapsed</div>
+          <div class="v" id="cyclesStat">0.000</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel viz">
+      <div class="topviz">
+        <div class="card">
+          <h3>1. Phase as a point moving around a circle</h3>
+          <canvas id="circleCanvas" width="520" height="520"></canvas>
+        </div>
+        <div class="card">
+          <h3>2. Same thing unfolded into a smooth sine wave</h3>
+          <canvas id="waveCanvas" width="900" height="520"></canvas>
+        </div>
+      </div>
+
+      <div class="bottomviz">
+        <div class="card">
+          <h3>3. A wave can be represented as numbers (samples)</h3>
+          <canvas id="sampleCanvas" width="800" height="340"></canvas>
+          <div class="chips" id="sampleChips"></div>
+          <div class="equation-row">
+            <strong>Meaning:</strong> each number is the wave height at one sampled time instant.
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>4. A sequence of numbers can be thought of as a signal / wave-like shape</h3>
+          <canvas id="sequenceCanvas" width="800" height="340"></canvas>
+
+          <div class="buttons" style="margin-top:12px">
+            <button id="sinePresetBtn">Load sine-like sequence</button>
+            <button id="randomBtn">Random sequence</button>
+            <button id="flatBtn">Flat sequence</button>
+          </div>
+
+          <div class="slider-bank" id="sliderBank"></div>
+
+          <div class="equation-row">
+            <strong>Meaning:</strong> even if these numbers are not a perfect sine wave, once placed across time,
+            they become a <span class="mono">discrete signal</span>.
+          </div>
+        </div>
+      </div>
+
+      <div class="explain">
+        <div class="ex">
+          <b>Frequency</b>
+          <small>Changes how fast the point rotates. Faster rotation means more wave cycles per second.</small>
+        </div>
+        <div class="ex">
+          <b>Phase</b>
+          <small>Specifies the starting angle. It says where the wave begins in its cycle.</small>
+        </div>
+        <div class="ex">
+          <b>Numbers as signals</b>
+          <small>A list like [2, 4, 1, -1, 3] is not "just numbers" — it can be viewed as values changing over time.</small>
+        </div>
+      </div>
+
+      <div class="footer-note">
+        Suggested path to learn:
+        <strong>first</strong> understand the circle and phase,
+        <strong>then</strong> see the smooth wave,
+        <strong>then</strong> see how it becomes a sequence of numbers,
+        and finally notice how any number sequence can itself be interpreted as a signal.
+        <br><br>
+        <strong>A short history:</strong> Joseph Fourier developed trigonometric series in his work on heat, published in expanded form in 1822. That work helped establish the broader idea that changing phenomena can be represented as combinations of waves.
+        <a href="https://mathshistory.st-andrews.ac.uk/Biographies//Fourier/" target="_blank" rel="noopener">Read a historical overview ↗</a>
+        <br><br><a href="index.html">← Playground explorer</a>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// Main controls
+const amp = $("amp");
+const freq = $("freq");
+const phase = $("phase");
+const time = $("time");
+const sampleCount = $("sampleCount");
+
+// Main canvases
+const cc = $("circleCanvas");
+const wc = $("waveCanvas");
+const sc = $("sampleCanvas");
+const qc = $("sequenceCanvas");
+
+const cctx = cc.getContext("2d");
+const wctx = wc.getContext("2d");
+const sctx = sc.getContext("2d");
+const qctx = qc.getContext("2d");
+
+let playing = false;
+let lastTs = null;
+
+// Sequence editor state
+let seqValues = [0, 0.7, 1, 0.6, 0, -0.6, -1, -0.7];
+
+function values() {
+  const A = +amp.value;
+  const f = +freq.value;
+  const phiDeg = +phase.value;
+  const phi = phiDeg * Math.PI / 180;
+  const t = +time.value;
+  const theta = 2 * Math.PI * f * t + phi;
+  const y = A * Math.sin(theta);
+  const N = +sampleCount.value;
+  return {A, f, phiDeg, phi, t, theta, y, N};
+}
+
+function niceAngle(rad){
+  let d = rad * 180 / Math.PI;
+  d = ((d % 360) + 360) % 360;
+  return d;
+}
+
+function buildSequenceSliders(){
+  const bank = $("sliderBank");
+  bank.innerHTML = "";
+  seqValues.forEach((v, i) => {
+    const wrap = document.createElement("div");
+    wrap.className = "mini";
+    wrap.innerHTML = `
+      <label>s${i} <span class="n" id="seqVal${i}">${Number(v).toFixed(2)}</span></label>
+      <input type="range" min="-2" max="2" step="0.05" value="${v}" id="seqSlider${i}">
+    `;
+    bank.appendChild(wrap);
+  });
+
+  seqValues.forEach((_, i) => {
+    const el = $("seqSlider" + i);
+    el.addEventListener("input", () => {
+      seqValues[i] = +el.value;
+      $("seqVal" + i).textContent = seqValues[i].toFixed(2);
+      drawSequence();
+    });
+  });
+}
+
+function drawCircle(){
+  const {A, f, phiDeg, t, theta, y} = values();
+  const ctx = cctx;
+  const W = cc.width, H = cc.height;
+  ctx.clearRect(0,0,W,H);
+
+  const cx = W/2, cy = H/2;
+  const r = 150 * (A/2 + 0.5);
+
+  ctx.strokeStyle = "#2b3a59";
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(60,cy); ctx.lineTo(W-60,cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,60); ctx.lineTo(cx,H-60); ctx.stroke();
+
+  ctx.strokeStyle = "#49688f";
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+
+  const px = cx + r*Math.cos(theta);
+  const py = cy - r*Math.sin(theta);
+
+  ctx.setLineDash([8,8]);
+  ctx.strokeStyle = "rgba(115,213,255,.6)";
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(cx,py); ctx.lineTo(px,py); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(px,cy); ctx.lineTo(px,py); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.strokeStyle = "#ffd166";
+  ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(px,py); ctx.stroke();
+
+  ctx.fillStyle = "#73d5ff";
+  ctx.beginPath(); ctx.arc(px,py,11,0,Math.PI*2); ctx.fill();
+
+  const arcR = 65;
+  ctx.strokeStyle = "#9cf6c7";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(cx,cy,arcR,0,-theta,true);
+  ctx.stroke();
+
+  ctx.fillStyle = "#eef4ff";
+  ctx.font = "700 22px system-ui";
+  ctx.fillText(`angle = ${niceAngle(theta).toFixed(1)}°`, 24, 34);
+
+  ctx.fillStyle = "#9fb0cc";
+  ctx.font = "16px system-ui";
+  ctx.fillText(`phase φ = ${phiDeg.toFixed(0)}°`, 24, 62);
+  ctx.fillText(`frequency = ${f.toFixed(2)} Hz`, 24, 86);
+  ctx.fillText(`time = ${t.toFixed(2)} s`, 24, 110);
+
+  ctx.fillStyle = "#9cf6c7";
+  ctx.font = "700 18px system-ui";
+  ctx.fillText(`vertical height = ${y.toFixed(3)}`, 24, H-28);
+}
+
+function drawWave(){
+  const {A, f, phi, t, theta, y} = values();
+  const ctx = wctx;
+  const W = wc.width, H = wc.height;
+  ctx.clearRect(0,0,W,H);
+
+  const padL=64,padR=26,padT=34,padB=54;
+  const left=padL,right=W-padR,top=padT,bottom=H-padB;
+  const mid=(top+bottom)/2;
+  const scaleY=(bottom-top)/4.8;
+
+  ctx.strokeStyle="#2b3a59";
+  ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(left,mid);ctx.lineTo(right,mid);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(left,top);ctx.lineTo(left,bottom);ctx.stroke();
+
+  ctx.fillStyle="#9fb0cc";
+  ctx.font="14px system-ui";
+  ctx.fillText("+A",16,top+8);
+  ctx.fillText("0",28,mid+5);
+  ctx.fillText("-A",16,bottom);
+  ctx.fillText("time →",right-46,H-16);
+
+  const maxT = 4;
+  for(let s=0;s<=4;s++){
+    const x=left+(right-left)*(s/maxT);
+    ctx.strokeStyle="rgba(255,255,255,.06)";
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,bottom);ctx.stroke();
+    ctx.fillStyle="#7487a7";
+    ctx.fillText(`${s}s`,x-10,bottom+22);
+  }
+
+  ctx.strokeStyle="#73d5ff";
+  ctx.lineWidth=4;
+  ctx.beginPath();
+  for(let i=0;i<=900;i++){
+    const tt=maxT*i/900;
+    const yy=A*Math.sin(2*Math.PI*f*tt+phi);
+    const x=left+(right-left)*(tt/maxT);
+    const py=mid-yy*scaleY;
+    if(i===0)ctx.moveTo(x,py); else ctx.lineTo(x,py);
+  }
+  ctx.stroke();
+
+  const tx=left+(right-left)*(t/maxT);
+  const ty=mid-y*scaleY;
+
+  ctx.strokeStyle="#ffd166";
+  ctx.lineWidth=2;
+  ctx.setLineDash([7,7]);
+  ctx.beginPath();ctx.moveTo(tx,top);ctx.lineTo(tx,bottom);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(left,ty);ctx.lineTo(tx,ty);ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle="#ffd166";
+  ctx.beginPath();ctx.arc(tx,ty,10,0,Math.PI*2);ctx.fill();
+
+  ctx.fillStyle="#eef4ff";
+  ctx.font="700 18px system-ui";
+  ctx.fillText(`x(t) = ${y.toFixed(3)}`, Math.min(tx+14,right-130), Math.max(ty-14,top+20));
+
+  ctx.fillStyle="#9fb0cc";
+  ctx.font="15px system-ui";
+  const deg=niceAngle(theta).toFixed(1);
+  ctx.fillText(`circle angle at this instant: ${deg}°`,left,22);
+}
+
+function getSamples(){
+  const {A, f, phi, N} = values();
+  const arr = [];
+  const totalT = 1; // sample over 1 second for conceptual simplicity
+  for(let i=0;i<N;i++){
+    const tt = totalT * i / (N-1);
+    const yy = A * Math.sin(2*Math.PI*f*tt + phi);
+    arr.push({t:tt, y:yy});
+  }
+  return arr;
+}
+
+function drawSamples(){
+  const ctx = sctx;
+  const W = sc.width, H = sc.height;
+  ctx.clearRect(0,0,W,H);
+
+  const padL=56,padR=20,padT=28,padB=48;
+  const left=padL,right=W-padR,top=padT,bottom=H-padB;
+  const mid=(top+bottom)/2;
+
+  ctx.strokeStyle="#2b3a59";
+  ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(left,mid);ctx.lineTo(right,mid);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(left,top);ctx.lineTo(left,bottom);ctx.stroke();
+
+  ctx.fillStyle="#9fb0cc";
+  ctx.font="13px system-ui";
+  ctx.fillText("+", 28, top+8);
+  ctx.fillText("0", 28, mid+4);
+  ctx.fillText("−", 28, bottom);
+
+  const samples = getSamples();
+  const maxAbs = Math.max(0.4, ...samples.map(s=>Math.abs(s.y)));
+  const scaleY = (bottom-top)/(maxAbs*2.6);
+
+  // faint smooth curve underneath
+  ctx.strokeStyle="rgba(115,213,255,.35)";
+  ctx.lineWidth=3;
+  ctx.beginPath();
+  for(let i=0;i<=400;i++){
+    const tt = i/400;
+    const {A, f, phi} = values();
+    const yy = A * Math.sin(2*Math.PI*f*tt + phi);
+    const x = left + (right-left) * tt;
+    const y = mid - yy * scaleY;
+    if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // stems and points
+  samples.forEach((s, i) => {
+    const x = left + (right-left) * (s.t / 1);
+    const y = mid - s.y * scaleY;
+    ctx.strokeStyle="rgba(255,209,102,.6)";
+    ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(x, mid);ctx.lineTo(x, y);ctx.stroke();
+
+    ctx.fillStyle="#ffd166";
+    ctx.beginPath();ctx.arc(x, y, 6, 0, Math.PI*2);ctx.fill();
+
+    ctx.fillStyle="#7487a7";
+    ctx.font="12px system-ui";
+    ctx.fillText(String(i), x-3, bottom+20);
+  });
+
+  ctx.fillStyle="#eef4ff";
+  ctx.font="700 14px system-ui";
+  ctx.fillText("sample index →", right-90, H-16);
+
+  // Chips
+  const chipBox = $("sampleChips");
+  chipBox.innerHTML = "";
+  samples.forEach((s, i) => {
+    const div = document.createElement("div");
+    div.className = "chip";
+    div.textContent = `s${i} = ${s.y.toFixed(2)}`;
+    chipBox.appendChild(div);
+  });
+}
+
+function drawSequence(){
+  const ctx = qctx;
+  const W = qc.width, H = qc.height;
+  ctx.clearRect(0,0,W,H);
+
+  const padL=56,padR=20,padT=28,padB=48;
+  const left=padL,right=W-padR,top=padT,bottom=H-padB;
+  const mid=(top+bottom)/2;
+
+  ctx.strokeStyle="#2b3a59";
+  ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(left,mid);ctx.lineTo(right,mid);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(left,top);ctx.lineTo(left,bottom);ctx.stroke();
+
+  const maxAbs = Math.max(1, ...seqValues.map(v => Math.abs(v)));
+  const scaleY = (bottom-top)/(maxAbs*2.6);
+
+  // connected sequence
+  ctx.strokeStyle="#9cf6c7";
+  ctx.lineWidth=4;
+  ctx.beginPath();
+  seqValues.forEach((v, i) => {
+    const x = left + (right-left) * (i / (seqValues.length-1));
+    const y = mid - v * scaleY;
+    if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // points
+  seqValues.forEach((v, i) => {
+    const x = left + (right-left) * (i / (seqValues.length-1));
+    const y = mid - v * scaleY;
+
+    ctx.strokeStyle="rgba(156,246,199,.45)";
+    ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(x, mid);ctx.lineTo(x, y);ctx.stroke();
+
+    ctx.fillStyle="#9cf6c7";
+    ctx.beginPath();ctx.arc(x, y, 6, 0, Math.PI*2);ctx.fill();
+
+    ctx.fillStyle="#7487a7";
+    ctx.font="12px system-ui";
+    ctx.fillText(String(i), x-3, bottom+20);
+  });
+
+  ctx.fillStyle="#eef4ff";
+  ctx.font="700 14px system-ui";
+  ctx.fillText("index / time step →", right-120, H-16);
+
+  ctx.fillStyle="#9fb0cc";
+  ctx.font="14px system-ui";
+  ctx.fillText("This is a discrete signal: values changing across successive positions.", left, 20);
+}
+
+function updateText(){
+  const {A,f,phiDeg,t,theta,y,N}=values();
+  $("ampVal").textContent=A.toFixed(2);
+  $("freqVal").textContent=f.toFixed(2)+" Hz";
+  $("phaseVal").textContent=phiDeg.toFixed(0)+"°";
+  $("timeVal").textContent=t.toFixed(2)+" s";
+  $("sampleCountVal").textContent=N;
+  $("angleStat").textContent=niceAngle(theta).toFixed(1)+"°";
+  $("waveStat").textContent=y.toFixed(3);
+  $("periodStat").textContent=(1/f).toFixed(3)+" s";
+  $("cyclesStat").textContent=(f*t).toFixed(3);
+}
+
+function drawAll(){
+  updateText();
+  drawCircle();
+  drawWave();
+  drawSamples();
+  drawSequence();
+}
+
+["input","change"].forEach(ev=>{
+  [amp,freq,phase,time,sampleCount].forEach(el=>el.addEventListener(ev,drawAll));
+});
+
+$("playBtn").addEventListener("click",()=>{
+  playing=!playing;
+  $("playBtn").textContent=playing?"⏸ Pause":"▶ Play";
+  lastTs=null;
+  if(playing)requestAnimationFrame(tick);
+});
+
+$("resetBtn").addEventListener("click",()=>{
+  amp.value=1;
+  freq.value=1;
+  phase.value=0;
+  time.value=0;
+  sampleCount.value=12;
+  drawAll();
+});
+
+$("quarterBtn").addEventListener("click",()=>{
+  phase.value=90;
+  time.value=0;
+  drawAll();
+});
+
+$("copySineBtn").addEventListener("click",()=>{
+  const samples = getSamples();
+  seqValues = samples.slice(0, 8).map(s => Number(s.y.toFixed(2)));
+  buildSequenceSliders();
+  drawSequence();
+});
+
+$("sinePresetBtn").addEventListener("click",()=>{
+  seqValues = [0, 0.7, 1.0, 0.7, 0, -0.7, -1.0, -0.7];
+  buildSequenceSliders();
+  drawSequence();
+});
+
+$("randomBtn").addEventListener("click",()=>{
+  seqValues = seqValues.map(() => Number((Math.random()*4 - 2).toFixed(2)));
+  buildSequenceSliders();
+  drawSequence();
+});
+
+$("flatBtn").addEventListener("click",()=>{
+  seqValues = seqValues.map(() => 0);
+  buildSequenceSliders();
+  drawSequence();
+});
+
+function tick(ts){
+  if(!playing)return;
+  if(lastTs===null)lastTs=ts;
+  const dt=(ts-lastTs)/1000;
+  lastTs=ts;
+  let t=+time.value+dt;
+  if(t>+time.max)t=0;
+  time.value=t;
+  drawAll();
+  requestAnimationFrame(tick);
+}
+
+buildSequenceSliders();
+drawAll();
+</script>
+</body>
+</html>

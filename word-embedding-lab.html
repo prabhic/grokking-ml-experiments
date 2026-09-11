@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Word-embedding lab — words become geometry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;450;500;600&amp;display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#14202E;
+  --ink2:#41576C;
+  --ink3:#7B90A2;
+  --paper:#E6EDF1;
+  --panel:#FBFCFC;
+  --rule:#C2D2DC;
+  --teal:#0E7C6B;
+  --crim:#B0234A;
+  --gold:#C9901A;
+  --signal:#2D6BE4;
+  --r:3px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  background-image:
+    linear-gradient(to right, rgba(120,150,168,.14) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(120,150,168,.14) 1px, transparent 1px);
+  background-size:26px 26px;
+  color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.we-wrap{width:100%;margin:0;padding:0 0 72px}
+
+/* ---------- app shell ---------- */
+.we-appbar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(251,252,252,.96);border-bottom:1px solid var(--rule);
+  box-shadow:0 2px 12px rgba(20,32,46,.06);backdrop-filter:blur(12px);
+}
+.we-appbar-inner{display:flex;align-items:stretch;min-height:76px;width:100%}
+.we-brand{
+  width:224px;flex:none;padding:12px 18px;border-right:1px solid var(--rule);
+  display:flex;flex-direction:column;justify-content:center;
+}
+.we-brand-kicker{font:600 9.5px/1.2 "IBM Plex Mono",monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--teal)}
+.we-brand-name{font:600 21px/1.15 "Fraunces",Georgia,serif;letter-spacing:-.015em}
+.we-brand-idea{font:500 12px/1.4 "IBM Plex Sans",sans-serif;color:var(--teal);margin-top:4px}
+.we-brand a{font:500 10.5px/1.4 "IBM Plex Mono",monospace;color:var(--ink3);text-decoration:none;margin-top:2px}
+.we-brand a:hover{color:var(--signal)}
+.we-toolbar{display:flex;align-items:stretch;min-width:0;flex:1;overflow-x:auto;scrollbar-width:thin}
+.we-toolgroup{display:flex;align-items:center;gap:6px;padding:9px 12px;border-right:1px solid var(--rule);flex:none}
+.we-toolgroup.we-grow{flex:1;min-width:290px}
+.we-tool-label{font:600 9px/1.2 "IBM Plex Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);align-self:flex-start;margin-top:2px}
+.we-tool-stack{display:flex;flex-direction:column;justify-content:center;gap:5px}
+.we-compact-field{width:150px}
+.we-compact-field .we-flabel{margin:0}
+.we-compact-field .we-flabel label{font-size:10.5px}
+.we-compact-field input[type=range]{height:13px}
+.we-compact-check{white-space:nowrap;margin:0;font-size:11.5px}
+.we-appbar .we-btn{padding:6px 9px;font-size:11.5px;white-space:nowrap}
+
+.we-playground{
+  min-height:calc(100svh - 76px);padding:14px 18px 20px;
+  background:rgba(230,237,241,.74);border-bottom:1px solid var(--rule);
+}
+.we-playground-inner{width:100%;max-width:1680px;margin:0 auto}
+.we-story{max-width:1180px;margin:0 auto;padding:58px 20px 0;scroll-margin-top:88px}
+
+/* ---------- header ---------- */
+.we-eyebrow{
+  font-family:"IBM Plex Mono",monospace;
+  font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink3);margin:0 0 14px;
+}
+.we-title{
+  font-family:"Fraunces","Iowan Old Style",Georgia,serif;
+  font-weight:600;font-size:clamp(30px,5.4vw,52px);
+  line-height:1.02;letter-spacing:-.015em;margin:0 0 14px;max-width:18ch;
+}
+.we-title em{font-style:italic;color:var(--teal)}
+.we-lede{max-width:72ch;color:var(--ink2);margin:0 0 30px;font-size:17px}
+.we-lede code{font-family:"IBM Plex Mono",monospace;font-size:13.5px;background:#fff;border:1px solid var(--rule);padding:1px 5px;border-radius:var(--r)}
+
+/* ---------- layout ---------- */
+.we-main{display:grid;grid-template-columns:minmax(560px,1fr) 340px;gap:14px;align-items:stretch}
+@media (max-width:1050px){
+  .we-appbar-inner{display:block}
+  .we-brand{width:100%;min-height:76px;padding:7px 14px;border-right:0;border-bottom:1px solid var(--rule);display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center}
+  .we-brand-kicker{grid-column:2;grid-row:1}
+  .we-brand-name{grid-row:1 / span 2;font-size:18px}
+  .we-brand a{grid-column:2;grid-row:2;margin:0}
+  .we-brand-idea{grid-column:1 / -1;grid-row:3;margin-top:3px}
+  .we-toolbar{height:70px}
+  .we-playground{min-height:calc(100svh - 146px)}
+  .we-story{scroll-margin-top:158px}
+  .we-main{grid-template-columns:minmax(0,1fr)}
+  .we-rail{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+  .we-rail .we-trace-panel{grid-column:1 / -1}
+}
+@media (max-width:660px){
+  .we-playground{padding:10px 8px 16px}
+  .we-rail{grid-template-columns:minmax(0,1fr)!important}
+  .we-rail .we-trace-panel{grid-column:auto}
+  .we-anatomy{grid-template-columns:1fr 1fr!important}
+  .we-stage{min-height:118px}
+}
+
+.we-card{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);box-shadow:0 1px 0 rgba(20,32,46,.05)}
+.we-boardcard{padding:12px;display:flex;flex-direction:column;min-width:0}
+.we-rail{display:flex;flex-direction:column;gap:14px}
+
+.we-panel{padding:15px 16px 17px}
+.we-panel h2{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);
+  margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid var(--rule);
+  display:flex;justify-content:space-between;align-items:baseline;
+}
+.we-panel h2 span{letter-spacing:.04em;text-transform:none;color:var(--ink2)}
+
+.we-boardhead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.we-stat{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink2)}
+.we-stat b{color:var(--ink);font-weight:600}
+#we-svg{width:100%;height:clamp(360px,calc(100svh - 390px),620px);min-height:360px;display:block;touch-action:manipulation;cursor:crosshair}
+#we-svg text{user-select:none}
+.we-eqbar{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:space-between;align-items:baseline;
+  margin:0 0 8px;padding:7px 11px;background:#fff;border:1px solid var(--rule);border-radius:var(--r);
+  font-family:"IBM Plex Mono",monospace}
+.we-eq{font-size:15px;font-weight:600;color:var(--ink)}
+.we-miss{font-size:15px;font-weight:600;color:var(--ink)}
+.we-score{font-size:15px;font-weight:600;color:var(--ink)}
+.we-eqcap{font-size:10.5px;font-weight:500;color:var(--ink3)}
+
+/* ---------- controls ---------- */
+.we-btnrow{display:flex;flex-wrap:wrap;gap:7px}
+button{font:inherit;color:inherit}
+.we-btn{
+  background:#fff;border:1px solid var(--rule);border-radius:var(--r);
+  padding:7px 11px;font-size:13px;font-weight:500;cursor:pointer;
+  transition:background .12s ease,border-color .12s ease,transform .06s ease;
+}
+.we-btn:hover{background:#F1F5F7;border-color:var(--ink3)}
+.we-btn:active{transform:translateY(1px)}
+.we-btn.we-primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.we-btn.we-primary:hover{background:#22384F}
+.we-btn.we-on{background:var(--teal);border-color:var(--teal);color:#fff}
+.we-btn[disabled]{opacity:.4;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+
+.we-field{margin:0 0 13px}
+.we-field:last-child{margin-bottom:0}
+.we-flabel{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.we-flabel label{font-size:13px;color:var(--ink2)}
+.we-flabel output{font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;color:var(--ink)}
+.we-hint{font-size:11.5px;color:var(--ink3);margin-top:3px;line-height:1.35}
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;background:transparent;margin:0;height:18px;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--rule);border-radius:2px}
+input[type=range]::-moz-range-track{height:3px;background:var(--rule);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--ink);margin-top:-6px;border:2px solid #fff;box-shadow:0 0 0 1px var(--rule)}
+input[type=range]::-moz-range-thumb{width:15px;height:15px;border:2px solid #fff;border-radius:50%;background:var(--ink);box-shadow:0 0 0 1px var(--rule)}
+.we-check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2);margin-top:9px;cursor:pointer}
+.we-check input{accent-color:var(--ink);width:15px;height:15px}
+.we-tag{display:inline-block;padding:0 5px;border-radius:2px;font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;vertical-align:1px;letter-spacing:.06em}
+.we-tag.hyper{background:#F3E3BC;color:#7d5c0e}
+.we-tag.param{background:#D6EAE6;color:var(--teal)}
+
+/* ---------- readout ---------- */
+.we-nums{display:grid;grid-template-columns:1fr 1fr;gap:10px 8px;margin-bottom:12px}
+.we-num{border-left:2px solid var(--rule);padding-left:9px}
+.we-num b{display:block;font-family:"IBM Plex Mono",monospace;font-size:18px;font-weight:600;line-height:1.15}
+.we-num small{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);font-family:"IBM Plex Mono",monospace}
+#we-chart{width:100%;height:64px;display:block;border:1px solid var(--rule);border-radius:var(--r);background:#fff}
+.we-chartcap{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink3);margin-top:6px}
+
+#we-map{width:100%;height:auto;display:block;border:1px solid var(--rule);border-radius:var(--r);background:#fff;cursor:crosshair}
+
+#we-trace{
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;line-height:1.65;
+  height:clamp(112px,16svh,160px);overflow-y:auto;background:#fff;border:1px solid var(--rule);
+  border-radius:var(--r);padding:9px 10px;color:var(--ink2);white-space:pre-wrap;
+}
+#we-trace .we-good{color:var(--teal)}
+#we-trace .we-bad{color:var(--crim)}
+#we-trace .we-dim{color:var(--ink3)}
+
+/* ---------- step anatomy ---------- */
+.we-anatomy{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;
+  margin-top:10px;padding-top:10px;border-top:1px solid var(--rule)}
+.we-stage{background:#fff;border:1px solid var(--rule);border-radius:var(--r);padding:8px 9px;min-height:100px}
+.we-stage.we-live{border-color:var(--signal);box-shadow:0 0 0 1px var(--signal) inset}
+.we-stagehead{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink3);margin-bottom:6px;display:flex;gap:6px;align-items:center}
+.we-stagehead b{display:inline-grid;place-items:center;width:15px;height:15px;border:1px solid var(--rule);
+  border-radius:2px;color:var(--teal);font-size:9.5px;flex:none}
+.we-stagebody{font-size:12px;color:var(--ink2);line-height:1.5}
+.we-stagebody b{color:var(--ink);font-family:"IBM Plex Mono",monospace;font-size:11.5px}
+.we-stageanim{animation:lrpop .3s ease}
+@keyframes lrpop{from{transform:translateY(3px);opacity:.35}to{transform:none;opacity:1}}
+
+/* ---------- notes ---------- */
+.we-notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px;margin-top:34px;padding-top:26px;border-top:1px solid var(--rule)}
+.we-note h3{font-family:"Fraunces",Georgia,serif;font-size:19px;font-weight:600;margin:0 0 8px;letter-spacing:-.01em}
+.we-note p{margin:0 0 10px;color:var(--ink2);font-size:14px}
+.we-formula{font-family:"IBM Plex Mono",monospace;font-size:12.5px;background:#fff;border:1px solid var(--rule);border-left:2px solid var(--teal);border-radius:var(--r);padding:10px 11px;color:var(--ink);line-height:1.7;overflow-x:auto}
+.we-try{list-style:none;margin:0;padding:0;counter-reset:t}
+.we-try li{counter-increment:t;position:relative;padding-left:26px;margin-bottom:10px;color:var(--ink2);font-size:14px}
+.we-try li::before{content:counter(t);position:absolute;left:0;top:1px;font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;color:var(--teal);border:1px solid var(--rule);background:#fff;border-radius:2px;width:17px;height:17px;display:grid;place-items:center}
+.we-def{margin:0}
+.we-def dt{font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;color:var(--teal);margin-top:9px}
+.we-def dt:first-of-type{margin-top:0}
+.we-def dd{margin:1px 0 0;color:var(--ink2);font-size:13.5px;line-height:1.45}
+.we-foot{margin-top:34px;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink3)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.we-select{font:500 12px "IBM Plex Sans",sans-serif;border:1px solid var(--rule);border-radius:var(--r);background:#fff;padding:5px 8px;min-width:86px;color:var(--ink)}
+.we-word-label{font:500 10px "IBM Plex Mono",monospace;color:var(--ink2)}
+.we-word-label select{display:block;margin-top:3px}
+#plot{width:100%;height:clamp(340px,calc(100svh - 345px),620px);display:block}
+#plot text{font:12px "IBM Plex Mono",monospace;fill:var(--ink2)}
+#vectors{white-space:pre-wrap;font-size:12px}
+#equation{white-space:pre-wrap;font:11px/1.7 "IBM Plex Mono",monospace;margin-top:12px}
+#trace{white-space:pre-wrap;font:11px/1.7 "IBM Plex Mono",monospace;color:var(--ink2);background:#fff;border:1px solid var(--rule);padding:9px 10px;min-height:100px}
+.neighbor{display:grid;grid-template-columns:60px 1fr 46px;gap:8px;align-items:center;font:11px "IBM Plex Mono",monospace;margin:10px 0}
+.track{position:relative;height:6px;background:var(--paper)}
+.track::after{content:"";position:absolute;left:50%;top:-2px;height:10px;border-left:1px solid var(--ink3)}
+.fill{position:absolute;height:100%}
+.we-dataset-note{font-size:11.5px;color:var(--ink2);margin:8px 0 0}
+.we-stagebody{overflow-wrap:anywhere}
+a{color:var(--teal)}
+@media(max-width:660px){.we-brand-kicker{font-size:8px}.we-toolgroup{padding:8px}.we-story{padding-top:36px}#plot{height:auto;min-height:0}.we-notes{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+
+<body>
+<header class="we-appbar">
+ <div class="we-appbar-inner">
+  <div class="we-brand"><span class="we-brand-kicker">LLM first principles · 02 / 35</span><strong class="we-brand-name">Word-embedding lab</strong><span class="we-brand-idea">A word becomes a point.</span><a href="#learn">How this works ↓</a></div>
+  <div class="we-toolbar" role="group" aria-label="Playground controls">
+   <div class="we-toolgroup"><span class="we-tool-label">Words</span><label class="we-word-label">A · teal<select class="we-select" id="wordA"></select></label><label class="we-word-label">B · rose<select class="we-select" id="wordB"></select></label></div>
+   <div class="we-toolgroup"><span class="we-tool-label">Compare</span><div class="we-btnrow"><button class="we-btn" data-pair="cat,dog">cat + dog</button><button class="we-btn" data-pair="cat,car">cat + car</button><button class="we-btn" data-pair="car,bus">car + bus</button></div></div>
+   <div class="we-toolgroup"><span class="we-tool-label">Edit A</span><div class="we-tool-stack">
+    <div class="we-compact-field"><div class="we-flabel"><label for="x">Dimension 1</label><output id="xValue" for="x"></output></div><input id="x" type="range" min="-1" max="1" step="0.01"></div>
+    <div class="we-compact-field"><div class="we-flabel"><label for="y">Dimension 2</label><output id="yValue" for="y"></output></div><input id="y" type="range" min="-1" max="1" step="0.01"></div>
+   </div></div>
+   <div class="we-toolgroup"><span class="we-tool-label">Data</span><button class="we-btn we-primary" id="reset">Reset vectors</button></div>
+  </div>
+ </div>
+</header>
+<main class="we-wrap">
+ <section class="we-playground" aria-label="Interactive word embedding playground">
+ <div class="we-playground-inner"><div class="we-main">
+  <section class="we-card we-boardcard" aria-label="Word vector map">
+   <div class="we-boardhead"><div class="we-stat">vocabulary <b>8 words</b> · dimensions <b>2</b></div><div class="we-stat">editing <b id="editing"></b> · use the top-bar sliders</div></div>
+   <div class="we-eqbar"><span class="we-eq" id="vectors"></span></div>
+   <svg id="plot" viewBox="0 0 560 400" role="img" aria-labelledby="plotTitle plotDesc"><title id="plotTitle">Two-dimensional word embedding map</title><desc id="plotDesc">Arrows from zero show selected word vectors: A in teal, B in rose. Coordinates and cosine scores appear in the readout.</desc><g id="drawing"></g></svg>
+   <p class="we-hint">Teal arrow = A · rose arrow = B · gray dots = other words · equal axis scales preserve angles.</p>
+   <div class="we-anatomy">
+    <div class="we-stage"><div class="we-stagehead"><b>1</b> pick</div><div class="we-stagebody" id="stage-pick"></div></div>
+    <div class="we-stage"><div class="we-stagehead"><b>2</b> look up</div><div class="we-stagebody" id="stage-lookup"></div></div>
+    <div class="we-stage"><div class="we-stagehead"><b>3</b> compare</div><div class="we-stagebody" id="stage-compare"></div></div>
+    <div class="we-stage"><div class="we-stagehead"><b>4</b> rank</div><div class="we-stagebody" id="stage-rank"></div></div>
+   </div>
+   <p class="we-dataset-note"><strong>Teaching data:</strong> hand-authored vectors, not a trained model. The map shows all two dimensions; editing coordinates is not training.</p>
+  </section>
+  <aside class="we-rail" aria-label="Readouts and calculation trace">
+   <section class="we-card we-panel"><h2>Readout <span>two words, one comparison</span></h2>
+    <div class="we-nums"><div class="we-num"><b id="score" aria-live="polite"></b><small>cosine · not probability</small></div><div class="we-num"><b id="angle"></b><small>angle</small></div><div class="we-num"><b id="dot"></b><small>dot product</small></div><div class="we-num"><b id="lengths"></b><small>length A / B</small></div></div>
+    <div id="equation"></div><p class="we-hint" id="explanation"></p>
+   </section>
+   <section class="we-card we-panel"><h2>Nearest words <span>query: <b id="query"></b></span></h2><div id="neighbors"></div><p class="we-hint">Cosine: −1 ← center 0 → +1. Other words ranked by direction, highest first.</p></section>
+   <section class="we-card we-panel we-trace-panel"><h2>Trace <span>what the code just did</span></h2><div id="trace" aria-live="off"></div></section>
+  </aside>
+ </div></div>
+ </section>
+ <article class="we-story" id="learn">
+  <p class="we-eyebrow">Word embeddings · vector geometry · semantic similarity</p>
+  <h1 class="we-title">A word becomes numbers. Relationships become <em>geometry.</em></h1>
+  <p class="we-lede">Choose <code>cat</code> and <code>dog</code>. Each word looks up a pair of numbers. Draw those numbers as arrows, compare their directions, and you have a way to measure a relationship. Move one word with the sliders: the ranking changes because the arithmetic only sees its coordinates.</p>
+  <div class="we-notes">
+   <section class="we-note"><h3>Read the playground</h3><p>Each point is a word’s vector endpoint. The teal arrow is word A; the rose arrow is word B. Both start at zero. The right rail compares the pair and ranks every other word against A.</p><p>The four boxes under the map follow the same calculation: pick words, look up vectors, compare directions, rank neighbors.</p></section>
+   <section class="we-note"><h3>One comparison at a time</h3><p>Multiply matching coordinates and add to get a dot product. Divide by both lengths to compare direction independently of length.</p><div class="we-formula">A · B = A₁B₁ + A₂B₂<br>‖A‖ = √(A₁² + A₂²)<br>cosine = (A · B) / (‖A‖ × ‖B‖)</div><p>Same direction gives 1, perpendicular gives 0, opposite gives −1. A zero vector has no direction, so its cosine is undefined.</p></section>
+   <section class="we-note"><h3>One table, two views</h3><p>The word map and nearest-word list show the same embedding table. Moving a point changes its comparisons everywhere. Selecting a different word only changes which table entry you inspect.</p><p>This map shows the full two-dimensional toy space. A two-dimensional projection of real embeddings would generally distort angles; similarity should be computed using the full vectors.</p></section>
+   <section class="we-note"><h3>What the top bar changes</h3><p><b>Words</b> selects the two entries to compare. <b>Compare</b> loads a word pair. <b>Edit A</b> changes the coordinates of the selected word A, including when it also appears as B. <b>Reset vectors</b> restores the entire original table and keeps your selection.</p><p>Our coordinates are hand-authored. Real embeddings are learned from data across many dimensions, whose individual axes usually have no simple human label. These sliders demonstrate a representation; they do not train one.</p></section>
+   <section class="we-note"><h3>The words on this page</h3><dl class="we-def"><dt>embedding</dt><dd>A numeric vector assigned to an item, so relationships can be computed.</dd><dt>dimension</dt><dd>One coordinate in that vector. This table has two per word.</dd><dt>similarity</dt><dd>A chosen comparison rule. Here, cosine measures agreement in direction, not factual truth or probability.</dd><dt>nearest neighbor</dt><dd>The other word with the highest cosine score for the query.</dd><dt>token vs word</dt><dd>LLMs usually look up tokens, including word pieces. Later layers produce representations that also depend on context.</dd></dl></section>
+   <section class="we-note"><h3>Try this</h3><ol class="we-try"><li>Compare <b>cat + dog</b>, then <b>cat + car</b>. Watch the angle and cosine change together.</li><li>Select <b>cat + car</b>. Set cat to [0.16, 0.90]. Different words, identical vectors: cosine becomes 1.</li><li>Set cat to [0.08, 0.45]. Its length halves, but its direction and cosine with car stay the same.</li><li>Set cat to [−0.16, −0.90]. The arrows oppose each other and cosine becomes −1.</li><li>Set both coordinates to zero. There is no direction to rank. Reset vectors to restore the teaching data.</li></ol></section>
+  </div>
+  <p class="we-foot"><a href="cosine-similarity-lab.html">← Vector similarity</a> · <a href="llm-playground-roadmap.md">Learning roadmap</a> · hand-authored teaching data · standalone playground</p>
+ </article>
+</main>
+<script>
+const initial={cat:[0.85,0.20],dog:[0.78,0.30],kitten:[0.92,0.12],wolf:[0.60,0.45],car:[0.16,0.90],bus:[0.25,0.82],truck:[0.10,0.76],bicycle:[0.40,0.72]};
+let embeddings=structuredClone(initial);
+const $=id=>document.getElementById(id), ns='http://www.w3.org/2000/svg';
+for(const id of ['wordA','wordB'])for(const word of Object.keys(initial)){const option=document.createElement('option');option.value=word;option.textContent=word;$(id).append(option)}
+$('wordA').value='cat';$('wordB').value='dog';
+const norm=v=>Math.hypot(...v), dot=(a,b)=>a[0]*b[0]+a[1]*b[1];
+function cosine(a,b){const divisor=norm(a)*norm(b);return divisor===0?null:Math.max(-1,Math.min(1,dot(a,b)/divisor))}
+function svg(tag,attrs,text){const node=document.createElementNS(ns,tag);for(const [k,v]of Object.entries(attrs))node.setAttribute(k,v);if(text!==undefined)node.textContent=text;$('drawing').append(node);return node}
+function render(action='Selected word pair'){
+ if(typeof action!=='string')action='Selected word pair';
+ const aWord=$('wordA').value,bWord=$('wordB').value,a=embeddings[aWord],b=embeddings[bWord],score=cosine(a,b);
+ $('vectors').textContent=`${aWord} → [${a.map(v=>v.toFixed(2)).join(', ')}]     ${bWord} → [${b.map(v=>v.toFixed(2)).join(', ')}]`;
+ $('score').textContent=score===null?'Undefined':score.toFixed(3);
+ $('equation').textContent=`cosine = (A · B) / (‖A‖ × ‖B‖)\n= ${dot(a,b).toFixed(4)} / (${norm(a).toFixed(4)} × ${norm(b).toFixed(4)})`;
+ $('explanation').textContent=score===null?'One selected vector is zero: there is no direction to compare.':`${aWord} and ${bWord} form an angle of ${(Math.acos(score)*180/Math.PI).toFixed(1)}°. ${score>0.9?'Their directions are very similar in this toy table.':score>0?'Their directions overlap less in this toy table.':score===0?'Their directions are perpendicular.':'Their directions point partly or fully against each other.'} Similarity here reflects our chosen coordinates, not a measured fact about language.`;
+ $('query').textContent=aWord;$('neighbors').replaceChildren();
+ const ranked=Object.entries(embeddings).filter(([w])=>w!==aWord).map(([w,v])=>({w,s:cosine(a,v)})).sort((a,b)=>(b.s??-2)-(a.s??-2));
+ for(const {w,s} of ranked){const row=document.createElement('div');row.className='neighbor';const name=document.createElement('span');name.textContent=w;const track=document.createElement('div');track.className='track';const fill=document.createElement('div');fill.className='fill';fill.style.width=`${s===null?0:Math.abs(s)*50}%`;fill.style.left=`${s!==null&&s<0?50-Math.abs(s)*50:50}%`;fill.style.background=s<0?'#B0234A':'#0E7C6B';track.append(fill);const value=document.createElement('span');value.textContent=s===null?'n/a':s.toFixed(3);row.append(name,track,value);$('neighbors').append(row)}
+ $('editing').textContent=aWord;
+ $('angle').textContent=score===null?'—':(Math.acos(score)*180/Math.PI).toFixed(1)+'°';
+ $('dot').textContent=dot(a,b).toFixed(3);
+ $('lengths').textContent=norm(a).toFixed(2)+' / '+norm(b).toFixed(2);
+ $('stage-pick').textContent='Select '+aWord+' and '+bWord+' from the eight-word vocabulary.';
+ $('stage-lookup').textContent=aWord+' → ['+a.map(v=>v.toFixed(2)).join(', ')+']; '+bWord+' → ['+b.map(v=>v.toFixed(2)).join(', ')+'].';
+ $('stage-compare').textContent=score===null?'A zero vector has no direction. Cosine is undefined.':'Dot product '+dot(a,b).toFixed(3)+' ÷ length product '+(norm(a)*norm(b)).toFixed(3)+' = '+score.toFixed(3)+'.';
+ $('stage-rank').textContent=ranked[0].s===null?'No ranking is possible for a zero query vector.':ranked[0].w+' has the closest direction to '+aWord+' (cosine '+ranked[0].s.toFixed(3)+').';
+ $('trace').textContent=action+'\n1  Look up '+aWord+' and '+bWord+'\n2  Multiply matching coordinates, then add\n3  Divide by both vector lengths\n4  '+(score===null?'Undefined: zero-length vector':'Cosine = '+score.toFixed(3))+'\n5  Rank the other 7 words against '+aWord;
+ document.querySelectorAll('[data-pair]').forEach(button=>{const active=button.dataset.pair===aWord+','+bWord;button.classList.toggle('we-on',active);button.setAttribute('aria-pressed',String(active))});
+for(const [i,id]of ['x','y'].entries()){$(id).value=a[i];$(id+'Value').textContent=a[i].toFixed(2)}
+ // Use equal physical scaling for both axes so angles are geometrically faithful.
+ const PX=x=>280+x*160,Y=y=>200-y*160;
+ $('drawing').replaceChildren();
+ for(const t of [-1,-0.5,0,0.5,1]){svg('line',{x1:PX(t),y1:40,x2:PX(t),y2:360,stroke:t===0?'#a2b3bb':'#e3eaed'});svg('line',{x1:120,y1:Y(t),x2:440,y2:Y(t),stroke:t===0?'#a2b3bb':'#e3eaed'});svg('text',{x:PX(t),y:380,'text-anchor':'middle'},t);if(t!==0)svg('text',{x:108,y:Y(t)+4,'text-anchor':'end'},t)}
+ svg('text',{x:440,y:398,'text-anchor':'end'},'Dimension 1');svg('text',{x:120,y:22},'Dimension 2');
+ for(const [v,color]of [[b,'#B0234A'],[a,'#0E7C6B']]){svg('line',{x1:280,y1:200,x2:PX(v[0]),y2:Y(v[1]),stroke:color,'stroke-width':3});if(norm(v)>0){const angle=Math.atan2(-v[1],v[0]),x=PX(v[0]),y=Y(v[1]);svg('polygon',{points:`${x},${y} ${x-10*Math.cos(angle-.4)},${y-10*Math.sin(angle-.4)} ${x-10*Math.cos(angle+.4)},${y-10*Math.sin(angle+.4)}`,fill:color})}}
+ for(const [index,[word,v]]of Object.entries(embeddings).entries()){const selected=word===aWord||word===bWord;svg('circle',{cx:PX(v[0]),cy:Y(v[1]),r:selected?6:4,fill:word===aWord?'#0E7C6B':word===bWord?'#B0234A':'#98a7ac'});svg('text',{x:PX(v[0])+(index%2===0?10:-10),y:Y(v[1])+(index%2===0?-9:17),'text-anchor':index%2===0?'start':'end',style:selected?'font-weight:700':''},word)}
+}
+for(const id of ['wordA','wordB'])$(id).addEventListener('change',render);
+for(const [i,id]of ['x','y'].entries())$(id).addEventListener('input',()=>{embeddings[$('wordA').value][i]=Number($(id).value);render('Edited '+$('wordA').value+' · dimension '+(i+1))});
+document.querySelectorAll('[data-pair]').forEach(button=>button.addEventListener('click',()=>{[$('wordA').value,$('wordB').value]=button.dataset.pair.split(',');render()}));
+$('reset').addEventListener('click',()=>{embeddings=structuredClone(initial);render('Reset all vectors')});
+render();
+</script>
+</body>
+</html>

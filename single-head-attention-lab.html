@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Single-Head Attention Playground</title>
+    <style>
+      :root {
+        --i: #14202e;
+        --i2: #41576c;
+        --i3: #7b90a2;
+        --p: #e6edf1;
+        --w: #fbfcfc;
+        --r: #c2d2dc;
+        --t: #0e7c6b;
+        --q: #b0234a;
+        --g: #c9901a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--p);
+        background-image:
+          linear-gradient(#7896a824 1px, transparent 1px),
+          linear-gradient(90deg, #7896a824 1px, transparent 1px);
+        background-size: 26px 26px;
+        color: var(--i);
+        font:
+          15px/1.5 system-ui,
+          sans-serif;
+      }
+      .bar {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #fbfcfcf5;
+        border-bottom: 1px solid var(--r);
+        display: flex;
+        min-height: 76px;
+      }
+      .brand {
+        width: 285px;
+        padding: 8px 14px;
+        border-right: 1px solid var(--r);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .meta {
+        display: flex;
+        justify-content: space-between;
+      }
+      .k,
+      .label {
+        font: 600 9px monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--i3);
+      }
+      a {
+        color: var(--t);
+      }
+      .meta a {
+        font: 9px monospace;
+      }
+      .name,
+      h1,
+      h3 {
+        font-family: Georgia, serif;
+      }
+      .name {
+        font-size: 21px;
+        font-weight: 600;
+      }
+      .idea {
+        font-size: 12px;
+        color: var(--t);
+      }
+      .live {
+        min-width: 190px;
+        padding: 8px 14px;
+        background: #d6eae6;
+        color: var(--t);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .live b {
+        font: 600 23px monospace;
+      }
+      .live small {
+        color: var(--i2);
+      }
+      .tools {
+        display: flex;
+        overflow: auto;
+        flex: 1;
+      }
+      .group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 12px;
+        border-right: 1px solid var(--r);
+        flex: none;
+      }
+      input[type="range"] {
+        accent-color: var(--t);
+        width: 140px;
+      }
+      .btn {
+        background: #fff;
+        border: 1px solid var(--r);
+        border-radius: 3px;
+        padding: 7px 10px;
+        cursor: pointer;
+      }
+      .btn:hover,
+      .btn.on {
+        background: var(--t);
+        color: #fff;
+      }
+      .primary {
+        background: var(--i);
+        color: #fff;
+      }
+      main {
+        padding: 14px 18px 72px;
+      }
+      .main {
+        max-width: 1680px;
+        margin: auto;
+        display: grid;
+        grid-template-columns: minmax(560px, 1fr) 340px;
+        gap: 14px;
+      }
+      .card {
+        background: var(--w);
+        border: 1px solid var(--r);
+        border-radius: 3px;
+      }
+      .board,
+      .panel {
+        padding: 14px;
+      }
+      .head {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        flex-wrap: wrap;
+        font: 12px monospace;
+        color: var(--i2);
+      }
+      .visual {
+        margin: 14px 0;
+        background: #fff;
+        border: 1px solid var(--r);
+        padding: 18px;
+        min-height: 190px;
+      }
+      .attention-flow { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 14px; align-items: stretch; }
+      .flow-box { border: 1px solid var(--r); padding: 12px; background: #fbfcfc; }
+      .flow-box h3 { margin: 0 0 9px; font: 600 12px monospace; text-transform: uppercase; letter-spacing: .08em; color: var(--i3); }
+      .vector-row { display: grid; grid-template-columns: 36px repeat(4, 1fr); gap: 6px; align-items: center; margin: 7px 0; font: 12px monospace; }
+      .vector-head { color: var(--i3); font-size: 10px; text-transform: uppercase; }
+      .vector-row input { width: 100%; padding: 5px; border: 1px solid var(--r); font: inherit; }
+      .attention-bars { display: flex; align-items: end; gap: 10px; height: 96px; border-bottom: 1px solid var(--r); margin-top: 12px; }
+      .attention-bars span { flex: 1; background: var(--t); position: relative; min-height: 3px; }
+      .attention-bars span b { position: absolute; bottom: 100%; left: 0; font: 10px monospace; color: var(--i2); }
+      .score-list { display: grid; gap: 4px; margin-top: 10px; font: 11px monospace; }
+      .score-list div { display: flex; justify-content: space-between; border-bottom: 1px dotted var(--r); padding: 3px 0; }
+      .contribution { margin-top: 10px; font: 11px/1.6 monospace; color: var(--i2); }
+      .output-vector { font: 600 21px monospace; color: var(--t); padding: 16px 0; }
+      @media (max-width: 760px) { .attention-flow { grid-template-columns: 1fr; } }
+      .bars {
+        display: flex;
+        align-items: end;
+        gap: 12px;
+        height: 120px;
+      }
+      .bars i {
+        display: block;
+        width: 34px;
+        background: var(--t);
+        min-height: 3px;
+      }
+      .formula,
+      .trace {
+        background: #fff;
+        border: 1px solid var(--r);
+        border-left: 2px solid var(--t);
+        padding: 10px;
+        font: 11px/1.7 monospace;
+        white-space: pre-wrap;
+      }
+      .trace {
+        min-height: 120px;
+      }
+      .stages {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        border-top: 1px solid var(--r);
+        padding-top: 10px;
+        margin-top: 12px;
+      }
+      .stage {
+        padding: 8px;
+        border: 1px solid var(--r);
+        min-height: 80px;
+        font-size: 12px;
+        color: var(--i2);
+      }
+      .stage b {
+        display: block;
+        font: 600 10px monospace;
+        color: var(--t);
+      }
+      h2 {
+        font: 600 10px monospace;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--i3);
+        border-bottom: 1px solid var(--r);
+        padding-bottom: 8px;
+      }
+      .metric {
+        border-left: 2px solid var(--r);
+        padding-left: 9px;
+        margin: 12px 0;
+      }
+      .metric b {
+        font: 600 23px monospace;
+        display: block;
+      }
+      .metric small {
+        font: 10px monospace;
+        text-transform: uppercase;
+        color: var(--i3);
+      }
+      .note {
+        font-size: 13px;
+        color: var(--i2);
+      }
+      .story {
+        max-width: 1180px;
+        margin: auto;
+        padding: 58px 20px 0;
+      }
+      .title {
+        font-size: clamp(30px, 5vw, 52px);
+        line-height: 1.02;
+        max-width: 19ch;
+      }
+      .title em {
+        color: var(--t);
+      }
+      .lede {
+        max-width: 72ch;
+        color: var(--i2);
+        font-size: 17px;
+      }
+      .notes {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 22px;
+        border-top: 1px solid var(--r);
+        padding-top: 26px;
+        margin-top: 34px;
+      }
+      .note-block p {
+        color: var(--i2);
+        font-size: 14px;
+      }
+      .foot {
+        font: 11px monospace;
+        margin-top: 30px;
+      }
+      @media (max-width: 1050px) {
+        .bar {
+          display: block;
+        }
+        .brand {
+          width: 100%;
+          min-height: 68px;
+          border: 0;
+          border-bottom: 1px solid var(--r);
+        }
+        .tools {
+          height: 70px;
+        }
+        .main {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 660px) {
+        .stages {
+          grid-template-columns: 1fr 1fr;
+        }
+        main {
+          padding: 10px 8px;
+        }
+        .story {
+          padding-top: 36px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="bar">
+      <div class="brand">
+        <div class="meta">
+          <span class="k">LLM first principles · 9/35</span
+          ><a href="#learn">Learn ↓</a>
+        </div>
+        <strong class="name">Single-Head Attention</strong
+        ><span class="idea">QKᵀ → softmax → weighted V.</span>
+      </div>
+      <div class="live">
+        <span class="k">Live result</span><b id="result">—</b
+        ><small id="sub">move the control</small>
+      </div>
+      <div class="tools">
+        <div class="group">
+          <span class="label">Query x</span
+          ><input
+            id="control"
+            type="range"
+            min="0"
+            max="100"
+            value="50"
+          /><output id="out">50</output>
+        </div>
+        <div class="group">
+          <span class="label">Try</span
+          ><button class="btn" id="try">Example</button>
+        </div>
+        <div class="group">
+          <span class="label">Start</span
+          ><button class="btn primary" id="reset">Reset</button>
+        </div>
+      </div>
+    </header>
+    <main>
+      <div class="main">
+        <section class="card board">
+          <div class="head">
+            <span>QKᵀ → softmax → weighted V.</span
+            ><span>one mechanism · one visible result</span>
+          </div>
+          <div class="visual">
+            <div class="attention-flow">
+              <div class="flow-box">
+                <h3>Input · Q, K, V</h3>
+                <div class="vector-row vector-head"><span></span><span>Kx</span><span>Ky</span><span>Vx</span><span>Vy</span></div>
+                <div class="vector-row"><label>Q</label><input id="qx" type="number" step="0.1" value="0"><input id="qy" type="number" step="0.1" value="0.6"><span>—</span><span>—</span></div>
+                <div class="vector-row"><span>K₁</span><span>0.8</span><span>0.2</span><span>1.0</span><span>0.0</span></div>
+                <div class="vector-row"><span>K₂</span><span>0.2</span><span>0.9</span><span>0.0</span><span>1.0</span></div>
+                <div class="vector-row"><span>K₃</span><span>-0.6</span><span>0.3</span><span>0.5</span><span>0.5</span></div>
+                <small class="note">K decides the weight; V is the information that gets mixed.</small>
+              </div>
+              <div class="flow-box">
+                <h3>Transform · focus</h3>
+                <div class="formula" id="formula"></div>
+                <div class="score-list" id="scoreList"></div>
+                <div class="attention-bars" id="bars"></div>
+                <p class="note" id="explain"></p>
+              </div>
+              <div class="flow-box">
+                <h3>Output · mixed V</h3>
+                <div class="output-vector" id="outputVector">[—, —]</div>
+                <div class="contribution" id="contribution"></div>
+                <p class="note">A weighted average of the value vectors.</p>
+              </div>
+            </div>
+          </div>
+          <div class="stages">
+            <div class="stage"><b>1 · input</b><span id="s1"></span></div>
+            <div class="stage"><b>2 · transform</b><span id="s2"></span></div>
+            <div class="stage"><b>3 · compare</b><span id="s3"></span></div>
+            <div class="stage"><b>4 · output</b><span id="s4"></span></div>
+          </div>
+        </section>
+        <aside>
+          <section class="card panel">
+            <h2>Readout <span>current state</span></h2>
+            <div class="metric">
+              <b id="metric"></b><small>primary quantity</small>
+            </div>
+            <div class="metric">
+              <b id="secondary"></b><small>supporting quantity</small>
+            </div>
+            <p class="note" id="insight"></p>
+          </section>
+          <section class="card panel">
+            <h2>Trace <span>what just changed</span></h2>
+            <div class="trace" id="trace"></div>
+          </section>
+        </aside>
+      </div>
+      <article class="story" id="learn">
+        <p class="k">LLM first principles · Single-Head Attention Playground</p>
+        <h1 class="title">
+          Single-Head Attention makes one hidden mechanism <em>visible.</em>
+        </h1>
+        <p class="lede">
+          QKᵀ → softmax → weighted V. This playground keeps the moving parts
+          small so the calculation can be followed from input to output.
+        </p>
+        <div class="notes">
+          <section class="note-block">
+            <h3>Read the playground</h3>
+            <p>
+              Move the control and watch the highlighted result change. The four
+              stages describe the mechanism in the same order as the code.
+            </p>
+          </section>
+          <section class="note-block">
+            <h3>What this isolates</h3>
+            <p>
+              QKᵀ → softmax → weighted V. The toy values are teaching data; real
+              models use larger vectors, matrices, vocabularies, and datasets.
+            </p>
+          </section>
+          <section class="note-block">
+            <h3>Why it matters</h3>
+            <p>
+              This mechanism is one link in the first-principles chain from text
+              to tokens, vectors, attention, prediction, and learning.
+            </p>
+          </section>
+          <section class="note-block">
+            <h3>Terms</h3>
+            <p>
+              <b>input</b> is what enters the operation. <b>transform</b> is the
+              calculation. <b>output</b> is what the next mechanism receives.
+            </p>
+          </section>
+          <section class="note-block">
+            <h3>Try this</h3>
+            <ol>
+              <li>Move the control slowly and narrate each stage.</li>
+              <li>Press Example to jump to a contrasting state.</li>
+              <li>Reset and reproduce the change from the beginning.</li>
+            </ol>
+          </section>
+          <section class="note-block">
+            <h3>A short history</h3>
+            <p>
+              Neural attention was introduced as a soft alignment idea in Bahdanau, Cho, and Bengio's 2014 sequence-to-sequence work. The Transformer paper, <em>Attention Is All You Need</em> (2017), made scaled dot-product self-attention the central building block used by modern LLMs.
+              <a href="https://arxiv.org/abs/1409.0473" target="_blank" rel="noopener">Bahdanau et al. ↗</a>
+              <a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Transformer paper ↗</a>
+            </p>
+          </section>
+          <section class="note-block">
+            <h3>Question &amp; answer</h3>
+            <p>
+              <b>Does a key mean the model matches one key and selects that key's value?</b>
+              Not exactly. The query is compared with <em>every</em> key. Softmax turns all those similarity scores into weights, and the output is a weighted mixture of all the corresponding value vectors. If one key matches much better, its value can dominate—but the mechanism is not restricted to one exact match.
+            </p>
+          </section>
+        </div>
+        <p class="foot">
+          <a href="index.html">← Playground explorer</a> ·
+          <a href="llm-playground-roadmap.md">Learning roadmap</a>
+        </p>
+      </article>
+    </main>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      let v = 50;
+      function render(action = "Moved query") {
+        const q = [parseFloat($("qx").value) || 0, parseFloat($("qy").value) || 0];
+        const keys = [[0.8, 0.2], [0.2, 0.9], [-0.6, 0.3]];
+        const values = [[1, 0], [0, 1], [0.5, 0.5]];
+        const scores = keys.map((k) => q[0] * k[0] + q[1] * k[1]);
+        const e = scores.map((s) => Math.exp(s));
+        const z = e.reduce((s, n) => s + n, 0);
+        const weights = e.map((n) => n / z);
+        const mixed = values.reduce((out, val, i) => [out[0] + weights[i] * val[0], out[1] + weights[i] * val[1]], [0, 0]);
+        const a = mixed[0], b = mixed[1];
+        $("result").textContent = "[" + mixed.map((n) => n.toFixed(2)).join(", ") + "]";
+        $("metric").textContent = a.toFixed(3);
+        $("secondary").textContent = b.toFixed(3);
+        $("out").textContent = q.map((n) => n.toFixed(1)).join(", ");
+        $("sub").textContent = "weighted output vector";
+        $("formula").textContent = "scores = Q · Kᵀ\nweights = softmax(scores)\noutput = Σ weightᵢ Vᵢ";
+        $("scoreList").innerHTML = scores.map((score, i) => '<div><span>Q · K' + (i + 1) + '</span><b>' + score.toFixed(3) + '</b></div>').join("");
+        $("bars").innerHTML = weights.map((w, i) => '<span style="height:' + Math.max(3, w * 82) + 'px"><b>K' + (i + 1) + ' ' + w.toFixed(2) + '</b></span>').join("");
+        $("outputVector").textContent = "[" + mixed.map((n) => n.toFixed(3)).join(", ") + "]";
+        $("contribution").textContent = values.map((val, i) => "w" + (i + 1) + "·V" + (i + 1) + " = [" + val.map(n => (weights[i] * n).toFixed(3)).join(", ") + "]").join("\n");
+        $("explain").textContent = "Move Q. Keys with larger dot products receive larger weights, so their values influence the output more.";
+        $("s1").textContent = "Q = [" + q.map((n) => n.toFixed(2)).join(", ") + "]";
+        $("s2").textContent = "Compare Q with each key using a dot product.";
+        $("s3").textContent = "Softmax turns scores into weights: [" + weights.map((n) => n.toFixed(2)).join(", ") + "].";
+        $("s4").textContent = "Mix V → [" + mixed.map((n) => n.toFixed(2)).join(", ") + "].";
+        $("insight").textContent =
+          "Attention is not a label lookup: it is a weighted average whose weights come from Q–K similarity.";
+        $("trace").textContent = [
+          action,
+          "Q: [" + q.join(", ") + "]",
+          "Scores: [" + scores.map((n) => n.toFixed(2)).join(", ") + "]",
+          "Output: [" + mixed.map((n) => n.toFixed(2)).join(", ") + "]",
+        ].join("\\n");
+      }
+      $("control").oninput = (e) => {
+        v = +e.target.value;
+        $("qx").value = (v / 50 - 1).toFixed(2);
+        render("Changed control");
+      };
+      ["qx", "qy"].forEach((id) => $(id).addEventListener("input", () => render("Edited " + id)));
+      $("try").onclick = () => {
+        v = 80;
+        $("control").value = 80;
+        render("Loaded example");
+      };
+      $("reset").onclick = () => {
+        v = 50;
+        $("qx").value = 0;
+        $("qy").value = 0.6;
+        $("control").value = 50;
+        render("Reset");
+      };
+      render();
+    </script>
+  </body>
+</html>

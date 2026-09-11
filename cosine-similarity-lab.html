@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cosine-similarity lab — direction matters</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;450;500;600&amp;display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#14202E;
+  --ink2:#41576C;
+  --ink3:#7B90A2;
+  --paper:#E6EDF1;
+  --panel:#FBFCFC;
+  --rule:#C2D2DC;
+  --teal:#0E7C6B;
+  --crim:#B0234A;
+  --gold:#C9901A;
+  --signal:#2D6BE4;
+  --r:3px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  background-image:
+    linear-gradient(to right, rgba(120,150,168,.14) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(120,150,168,.14) 1px, transparent 1px);
+  background-size:26px 26px;
+  color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.cs-wrap{width:100%;margin:0;padding:0 0 72px}
+
+/* ---------- app shell ---------- */
+.cs-appbar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(251,252,252,.96);border-bottom:1px solid var(--rule);
+  box-shadow:0 2px 12px rgba(20,32,46,.06);backdrop-filter:blur(12px);
+}
+.cs-appbar-inner{display:flex;align-items:stretch;min-height:76px;width:100%}
+.cs-brand{
+  width:260px;flex:none;padding:8px 14px;border-right:1px solid var(--rule);
+  display:flex;flex-direction:column;justify-content:center;
+}
+.cs-brand-kicker{font:600 9.5px/1.2 "IBM Plex Mono",monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--teal)}
+.cs-brand-name{font:600 21px/1.15 "Fraunces",Georgia,serif;letter-spacing:-.015em}
+.cs-brand-idea{font:500 12px/1.4 "IBM Plex Sans",sans-serif;color:var(--teal);margin-top:4px}
+.cs-brand a{font:500 10.5px/1.4 "IBM Plex Mono",monospace;color:var(--ink3);text-decoration:none;margin-top:2px}
+.cs-brand a:hover{color:var(--signal)}
+.cs-brand-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+.cs-brand-meta .cs-brand-kicker{font-size:8px;letter-spacing:.05em;white-space:nowrap}
+.cs-brand-meta a{font-size:9px;white-space:nowrap;margin:0}
+.cs-toolbar{display:flex;align-items:stretch;min-width:0;flex:1;overflow-x:auto;scrollbar-width:thin}
+.cs-toolgroup{display:flex;align-items:center;gap:6px;padding:9px 12px;border-right:1px solid var(--rule);flex:none}
+.cs-toolgroup.cs-grow{flex:1;min-width:290px}
+.cs-tool-label{font:600 9px/1.2 "IBM Plex Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);align-self:flex-start;margin-top:2px}
+.cs-tool-stack{display:flex;flex-direction:column;justify-content:center;gap:5px}
+.cs-compact-field{width:150px}
+.cs-compact-field .cs-flabel{margin:0}
+.cs-compact-field .cs-flabel label{font-size:10.5px}
+.cs-compact-field input[type=range]{height:13px}
+.cs-compact-check{white-space:nowrap;margin:0;font-size:11.5px}
+.cs-appbar .cs-btn{padding:6px 9px;font-size:11.5px;white-space:nowrap}
+
+.cs-playground{
+  min-height:calc(100svh - 76px);padding:14px 18px 20px;
+  background:rgba(230,237,241,.74);border-bottom:1px solid var(--rule);
+}
+.cs-playground-inner{width:100%;max-width:1680px;margin:0 auto}
+.cs-story{max-width:1180px;margin:0 auto;padding:58px 20px 0;scroll-margin-top:88px}
+
+/* ---------- header ---------- */
+.cs-eyebrow{
+  font-family:"IBM Plex Mono",monospace;
+  font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink3);margin:0 0 14px;
+}
+.cs-title{
+  font-family:"Fraunces","Iowan Old Style",Georgia,serif;
+  font-weight:600;font-size:clamp(30px,5.4vw,52px);
+  line-height:1.02;letter-spacing:-.015em;margin:0 0 14px;max-width:18ch;
+}
+.cs-title em{font-style:italic;color:var(--teal)}
+.cs-lede{max-width:72ch;color:var(--ink2);margin:0 0 30px;font-size:17px}
+.cs-lede code{font-family:"IBM Plex Mono",monospace;font-size:13.5px;background:#fff;border:1px solid var(--rule);padding:1px 5px;border-radius:var(--r)}
+
+/* ---------- layout ---------- */
+.cs-main{display:grid;grid-template-columns:minmax(560px,1fr) 340px;gap:14px;align-items:stretch}
+@media (max-width:1050px){
+  .cs-appbar-inner{display:block}
+  .cs-brand{width:100%;min-height:68px;padding:7px 14px;border-right:0;border-bottom:1px solid var(--rule);display:flex;align-items:flex-start}
+  .cs-brand-meta{width:100%;margin-bottom:2px}
+  .cs-brand-kicker{grid-column:2;grid-row:1}
+  .cs-brand-name{grid-row:1 / span 2;font-size:18px}
+  .cs-brand a{grid-column:2;grid-row:2;margin:0}
+  .cs-brand-idea{grid-column:1 / -1;grid-row:3;margin-top:3px}
+  .cs-toolbar{height:70px}
+  .cs-playground{min-height:calc(100svh - 146px)}
+  .cs-story{scroll-margin-top:158px}
+  .cs-main{grid-template-columns:minmax(0,1fr)}
+  .cs-rail{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+  .cs-rail .cs-trace-panel{grid-column:1 / -1}
+}
+@media (max-width:660px){
+  .cs-playground{padding:10px 8px 16px}
+  .cs-rail{grid-template-columns:minmax(0,1fr)!important}
+  .cs-rail .cs-trace-panel{grid-column:auto}
+  .cs-anatomy{grid-template-columns:1fr 1fr!important}
+  .cs-stage{min-height:118px}
+}
+
+.cs-card{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);box-shadow:0 1px 0 rgba(20,32,46,.05)}
+.cs-boardcard{padding:12px;display:flex;flex-direction:column;min-width:0}
+.cs-rail{display:flex;flex-direction:column;gap:14px}
+
+.cs-panel{padding:15px 16px 17px}
+.cs-panel h2{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);
+  margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid var(--rule);
+  display:flex;justify-content:space-between;align-items:baseline;
+}
+.cs-panel h2 span{letter-spacing:.04em;text-transform:none;color:var(--ink2)}
+
+.cs-boardhead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cs-stat{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink2)}
+.cs-stat b{color:var(--ink);font-weight:600}
+#cs-svg{width:100%;height:clamp(360px,calc(100svh - 390px),620px);min-height:360px;display:block;touch-action:manipulation;cursor:crosshair}
+#cs-svg text{user-select:none}
+.cs-eqbar{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:space-between;align-items:baseline;
+  margin:0 0 8px;padding:7px 11px;background:#fff;border:1px solid var(--rule);border-radius:var(--r);
+  font-family:"IBM Plex Mono",monospace}
+.cs-eq{font-size:15px;font-weight:600;color:var(--ink)}
+.cs-miss{font-size:15px;font-weight:600;color:var(--ink)}
+.cs-score{font-size:15px;font-weight:600;color:var(--ink)}
+.cs-eqcap{font-size:10.5px;font-weight:500;color:var(--ink3)}
+
+/* ---------- controls ---------- */
+.cs-btnrow{display:flex;flex-wrap:wrap;gap:7px}
+button{font:inherit;color:inherit}
+.cs-btn{
+  background:#fff;border:1px solid var(--rule);border-radius:var(--r);
+  padding:7px 11px;font-size:13px;font-weight:500;cursor:pointer;
+  transition:background .12s ease,border-color .12s ease,transform .06s ease;
+}
+.cs-btn:hover{background:#F1F5F7;border-color:var(--ink3)}
+.cs-btn:active{transform:translateY(1px)}
+.cs-btn.cs-primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.cs-btn.cs-primary:hover{background:#22384F}
+.cs-btn.cs-on{background:var(--teal);border-color:var(--teal);color:#fff}
+.cs-btn[disabled]{opacity:.4;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+
+.cs-field{margin:0 0 13px}
+.cs-field:last-child{margin-bottom:0}
+.cs-flabel{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.cs-flabel label{font-size:13px;color:var(--ink2)}
+.cs-flabel output{font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;color:var(--ink)}
+.cs-hint{font-size:11.5px;color:var(--ink3);margin-top:3px;line-height:1.35}
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;background:transparent;margin:0;height:18px;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--rule);border-radius:2px}
+input[type=range]::-moz-range-track{height:3px;background:var(--rule);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--ink);margin-top:-6px;border:2px solid #fff;box-shadow:0 0 0 1px var(--rule)}
+input[type=range]::-moz-range-thumb{width:15px;height:15px;border:2px solid #fff;border-radius:50%;background:var(--ink);box-shadow:0 0 0 1px var(--rule)}
+.cs-check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2);margin-top:9px;cursor:pointer}
+.cs-check input{accent-color:var(--ink);width:15px;height:15px}
+.cs-tag{display:inline-block;padding:0 5px;border-radius:2px;font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;vertical-align:1px;letter-spacing:.06em}
+.cs-tag.hyper{background:#F3E3BC;color:#7d5c0e}
+.cs-tag.param{background:#D6EAE6;color:var(--teal)}
+
+/* ---------- readout ---------- */
+.cs-nums{display:grid;grid-template-columns:1fr 1fr;gap:10px 8px;margin-bottom:12px}
+.cs-num{border-left:2px solid var(--rule);padding-left:9px}
+.cs-num b{display:block;font-family:"IBM Plex Mono",monospace;font-size:18px;font-weight:600;line-height:1.15}
+.cs-num small{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);font-family:"IBM Plex Mono",monospace}
+#cs-chart{width:100%;height:64px;display:block;border:1px solid var(--rule);border-radius:var(--r);background:#fff}
+.cs-chartcap{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink3);margin-top:6px}
+
+#cs-map{width:100%;height:auto;display:block;border:1px solid var(--rule);border-radius:var(--r);background:#fff;cursor:crosshair}
+
+#cs-trace{
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;line-height:1.65;
+  height:clamp(112px,16svh,160px);overflow-y:auto;background:#fff;border:1px solid var(--rule);
+  border-radius:var(--r);padding:9px 10px;color:var(--ink2);white-space:pre-wrap;
+}
+#cs-trace .cs-good{color:var(--teal)}
+#cs-trace .cs-bad{color:var(--crim)}
+#cs-trace .cs-dim{color:var(--ink3)}
+
+/* ---------- step anatomy ---------- */
+.cs-anatomy{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;
+  margin-top:10px;padding-top:10px;border-top:1px solid var(--rule)}
+.cs-stage{background:#fff;border:1px solid var(--rule);border-radius:var(--r);padding:8px 9px;min-height:100px}
+.cs-stage.cs-live{border-color:var(--signal);box-shadow:0 0 0 1px var(--signal) inset}
+.cs-stagehead{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink3);margin-bottom:6px;display:flex;gap:6px;align-items:center}
+.cs-stagehead b{display:inline-grid;place-items:center;width:15px;height:15px;border:1px solid var(--rule);
+  border-radius:2px;color:var(--teal);font-size:9.5px;flex:none}
+.cs-stagebody{font-size:12px;color:var(--ink2);line-height:1.5}
+.cs-stagebody b{color:var(--ink);font-family:"IBM Plex Mono",monospace;font-size:11.5px}
+.cs-stageanim{animation:lrpop .3s ease}
+@keyframes lrpop{from{transform:translateY(3px);opacity:.35}to{transform:none;opacity:1}}
+
+/* ---------- notes ---------- */
+.cs-notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px;margin-top:34px;padding-top:26px;border-top:1px solid var(--rule)}
+.cs-note h3{font-family:"Fraunces",Georgia,serif;font-size:19px;font-weight:600;margin:0 0 8px;letter-spacing:-.01em}
+.cs-note p{margin:0 0 10px;color:var(--ink2);font-size:14px}
+.cs-formula{font-family:"IBM Plex Mono",monospace;font-size:12.5px;background:#fff;border:1px solid var(--rule);border-left:2px solid var(--teal);border-radius:var(--r);padding:10px 11px;color:var(--ink);line-height:1.7;overflow-x:auto}
+.cs-try{list-style:none;margin:0;padding:0;counter-reset:t}
+.cs-try li{counter-increment:t;position:relative;padding-left:26px;margin-bottom:10px;color:var(--ink2);font-size:14px}
+.cs-try li::before{content:counter(t);position:absolute;left:0;top:1px;font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;color:var(--teal);border:1px solid var(--rule);background:#fff;border-radius:2px;width:17px;height:17px;display:grid;place-items:center}
+.cs-def{margin:0}
+.cs-def dt{font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;color:var(--teal);margin-top:9px}
+.cs-def dt:first-of-type{margin-top:0}
+.cs-def dd{margin:1px 0 0;color:var(--ink2);font-size:13.5px;line-height:1.45}
+.cs-foot{margin-top:34px;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink3)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+
+.cs-coordinate{font:500 10px "IBM Plex Mono",monospace;color:var(--ink2)}
+.cs-live-score{flex:none;min-width:186px;padding:8px 14px;background:#D6EAE6;border-right:1px solid var(--rule);display:flex;flex-direction:column;justify-content:center;color:var(--teal)}
+.cs-live-score label{font:600 10px "IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.08em}
+.cs-live-score output{font:600 32px/1.2 "IBM Plex Mono",monospace;margin:3px 0}
+.cs-live-score small{font:11px "IBM Plex Sans",sans-serif;color:var(--ink2)}
+.cs-num.cs-featured{grid-column:1 / -1;background:#D6EAE6;border-left:3px solid var(--teal);padding:10px 12px}
+.cs-num.cs-featured b{font-size:28px;color:var(--teal)}
+.cs-num.cs-featured small{color:var(--teal)}
+@media(max-width:1050px){.cs-live-score{min-height:62px;padding:7px 14px;display:grid;grid-template-columns:1fr auto;column-gap:12px;border-bottom:1px solid var(--rule)}.cs-live-score output{grid-column:2;grid-row:1 / span 2;font-size:28px;margin:0}.cs-live-score small{grid-column:1;grid-row:2}.cs-story{scroll-margin-top:220px}.cs-playground{min-height:calc(100svh - 208px)}}
+.cs-coordinate input{display:block;width:66px;padding:5px 6px;margin-top:3px;border:1px solid var(--rule);border-radius:var(--r);font:12px "IBM Plex Mono",monospace;color:var(--ink);background:#fff}
+.cs-canvas-wrap{flex:1;display:grid;place-items:center;min-width:0}
+#plot{display:block;width:min(100%,760px);height:auto;aspect-ratio:760/600;touch-action:none;cursor:crosshair;background:var(--panel)}
+#coordinates{font-size:12px;white-space:pre-wrap}
+#formula{font-size:11px;overflow-wrap:anywhere}
+#cs-trace{height:auto;min-height:130px}
+.cs-stagebody{overflow-wrap:anywhere}
+a{color:var(--teal)}
+@media(max-width:660px){.cs-brand-kicker{font-size:8px}.cs-toolgroup{padding:8px}.cs-story{padding-top:36px}.cs-notes{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+
+<body>
+<header class="cs-appbar"><div class="cs-appbar-inner">
+ <div class="cs-brand"><div class="cs-brand-meta"><span class="cs-brand-kicker">LLM first principles · 01/35</span><a href="#learn">How it works ↓</a></div><strong class="cs-brand-name">Cosine lab</strong><span class="cs-brand-idea">Compare direction, not length.</span></div>
+ <div class="cs-live-score"><label for="cos-header">Cosine similarity</label><output id="cos-header" aria-live="off"></output><small>−1 opposite · 0 perpendicular · 1 aligned</small></div>
+ <div class="cs-toolbar" role="group" aria-label="Playground controls">
+ <div class="cs-toolgroup"><span class="cs-tool-label">Vector a</span><label class="cs-coordinate" for="ax">a.x<input id="ax" type="number" step="0.1" min="-10000" max="10000" value="3"></label><label class="cs-coordinate" for="ay">a.y<input id="ay" type="number" step="0.1" min="-10000" max="10000" value="4.5"></label></div><div class="cs-toolgroup"><span class="cs-tool-label">Vector b</span><label class="cs-coordinate" for="bx">b.x<input id="bx" type="number" step="0.1" min="-10000" max="10000" value="4.8"></label><label class="cs-coordinate" for="by">b.y<input id="by" type="number" step="0.1" min="-10000" max="10000" value="3.6"></label></div>
+ <div class="cs-toolgroup"><span class="cs-tool-label">Compare</span><div class="cs-btnrow"><button class="cs-btn" data-preset="same">Same direction</button><button class="cs-btn" data-preset="orthogonal">90° apart</button><button class="cs-btn" data-preset="opposite">Opposite</button></div></div>
+ <div class="cs-toolgroup"><span class="cs-tool-label">Start</span><button class="cs-btn cs-primary" data-preset="default">Reset</button></div>
+ </div>
+</div></header>
+<main class="cs-wrap">
+<section class="cs-playground" aria-label="Interactive cosine similarity playground"><div class="cs-playground-inner"><div class="cs-main">
+ <section class="cs-card cs-boardcard" aria-label="Vector plot">
+  <div class="cs-boardhead"><div class="cs-stat">vectors <b>2</b> · dimensions <b>2</b></div><div class="cs-stat">drag either endpoint · or edit coordinates above</div></div>
+  <div class="cs-eqbar"><span class="cs-eq" id="coordinates"></span></div>
+  <div class="cs-canvas-wrap"><canvas id="plot" width="760" height="600" role="img" aria-label="Two vectors from the origin: a in teal, b in rose. Edit the labeled coordinate inputs to move them without dragging.">Vector endpoints and their comparison are available in the coordinate controls and readout.</canvas></div>
+  <p class="cs-hint">Teal = vector a · rose = vector b · gold arc = angle · equal axis scales preserve geometry.</p>
+  <div class="cs-anatomy">
+   <div class="cs-stage"><div class="cs-stagehead"><b>1</b> multiply</div><div class="cs-stagebody" id="stage-multiply"></div></div>
+   <div class="cs-stage"><div class="cs-stagehead"><b>2</b> add</div><div class="cs-stagebody" id="stage-add"></div></div>
+   <div class="cs-stage"><div class="cs-stagehead"><b>3</b> lengths</div><div class="cs-stagebody" id="stage-length"></div></div>
+   <div class="cs-stage"><div class="cs-stagehead"><b>4</b> divide</div><div class="cs-stagebody" id="stage-divide"></div></div>
+  </div>
+ </section>
+ <aside class="cs-rail" aria-label="Readout and calculation">
+  <section class="cs-card cs-panel"><h2>Readout <span>direction and magnitude</span></h2><div class="cs-nums">
+   <div class="cs-num cs-featured"><b id="cos" aria-live="polite"></b><small>cosine similarity · direction only</small></div><div class="cs-num"><b id="dot"></b><small>dot product</small></div><div class="cs-num"><b id="angle"></b><small>angle</small></div><div class="cs-num"><b id="magA"></b><small>|a| · length</small></div><div class="cs-num"><b id="magB"></b><small>|b| · length</small></div>
+  </div><p class="cs-hint" id="interpretation"></p></section>
+  <section class="cs-card cs-panel"><h2>Calculation <span>numbers behind the arrows</span></h2><div class="cs-formula" id="formula"></div><p class="cs-hint">Cosine ranges from −1 to 1. It is not a probability.</p></section>
+  <section class="cs-card cs-panel cs-trace-panel"><h2>Trace <span>what the code just did</span></h2><div id="cs-trace" aria-live="off"></div></section>
+ </aside>
+</div></div></section>
+<article class="cs-story" id="learn">
+ <p class="cs-eyebrow">Vectors · dot product · cosine similarity</p>
+ <h1 class="cs-title">Different lengths. The same <em>direction.</em></h1>
+ <p class="cs-lede">A vector has both length and direction. The dot product responds to both. Cosine similarity divides out the lengths, leaving a comparison of direction. Two arrows can have different coordinates and still score <code>1</code>.</p>
+ <div class="cs-notes">
+  <section class="cs-note"><h3>Read the playground</h3><p>Both arrows start at zero. The first coordinate moves an endpoint horizontally; the second moves it vertically. Changing either coordinate can change both length and direction.</p><p>The gold arc marks the angle between the arrows. The readout and four stages update whenever you drag an endpoint or edit a number.</p></section>
+  <section class="cs-note"><h3>One comparison at a time</h3><p>Multiply matching coordinates, add the products, then divide by both vector lengths.</p><div class="cs-formula">a · b = aₓbₓ + aᵧbᵧ<br>|a| = √(aₓ² + aᵧ²)<br>cos θ = (a · b) / (|a||b|)</div><p>At 90°, the products cancel. Beyond 90°, the dot product and cosine become negative.</p></section>
+  <section class="cs-note"><h3>Same direction ≠ same vector</h3><p>[2, 3] and [4, 6] are different vectors. The second is twice as long, but it points in exactly the same direction. Their cosine similarity is 1.</p><p>To preserve direction, multiply <b>every coordinate by the same positive number</b>. Changing just the second coordinate usually turns the arrow. Multiplying by a negative number reverses it.</p></section>
+  <section class="cs-note"><h3>What the top bar changes</h3><p><b>Vector a / b</b> edits coordinates directly. <b>Same direction</b>, <b>90° apart</b>, and <b>Opposite</b> load examples. <b>Reset</b> restores the original pair.</p><p>The plot expands for larger coordinates. Inputs accept finite values from −10,000 to 10,000; incomplete or out-of-range input leaves the last valid plot in place.</p></section>
+  <section class="cs-note"><h3>The words on this page</h3><dl class="cs-def"><dt>vector</dt><dd>An ordered list of coordinates, drawn here as an arrow from zero.</dd><dt>magnitude · |a|</dt><dd>The arrow’s length.</dd><dt>dot product · a · b</dt><dd>A sum of coordinate products: |a||b| cos θ.</dd><dt>cosine similarity</dt><dd>Agreement in direction: 1 aligned, 0 perpendicular, −1 opposite.</dd><dt>zero vector</dt><dd>[0, 0] has no direction. Its cosine comparison and angle are undefined.</dd></dl></section>
+  <section class="cs-note"><h3>Try this</h3><ol class="cs-try"><li>Choose <b>Same direction</b>. The lengths differ, but cosine is 1.</li><li>Set b to [2.5, 3.5], matching a. The dot product halves; cosine stays at 1.</li><li>Change only b.y to 1. The arrow turns and cosine changes.</li><li>Compare <b>90° apart</b> and <b>Opposite</b>. Watch the products cancel, then become negative.</li><li>Set a.x and a.y to zero. Length becomes zero; direction is undefined.</li></ol></section>
+ </div>
+ <p class="cs-foot"><a href="word-embedding-lab.html">Next: a word becomes a point →</a> · <a href="llm-playground-roadmap.md">Learning roadmap</a> · standalone playground</p>
+</article>
+</main>
+<script>
+const canvas = document.getElementById('plot');
+const ctx = canvas.getContext('2d');
+
+const els = {
+  ax: document.getElementById('ax'),
+  ay: document.getElementById('ay'),
+  bx: document.getElementById('bx'),
+  by: document.getElementById('by'),
+  dot: document.getElementById('dot'),
+  cos: document.getElementById('cos'),
+  magA: document.getElementById('magA'),
+  magB: document.getElementById('magB'),
+  angle: document.getElementById('angle'),
+  formula: document.getElementById('formula')
+};
+
+let a = { x: 3, y: 4.5 };
+let b = { x: 4.8, y: 3.6 };
+let dragging = null;
+
+let range = 7;
+const pad = 55;
+
+function fmt(n, digits=3) {
+  if (!Number.isFinite(n)) return 'undefined';
+  const s = n.toFixed(digits);
+  return s.replace(/\.?0+$/, '');
+}
+
+function worldToCanvas(p) {
+  const sx = Math.min(canvas.width - 2 * pad, canvas.height - 2 * pad) / (2 * range);
+  const sy = sx;
+  return {
+    x: canvas.width / 2 + p.x * sx,
+    y: canvas.height / 2 - p.y * sy
+  };
+}
+
+function canvasToWorld(x, y) {
+  const sx = Math.min(canvas.width - 2 * pad, canvas.height - 2 * pad) / (2 * range);
+  const sy = sx;
+  return {
+    x: (x - canvas.width / 2) / sx,
+    y: (canvas.height / 2 - y) / sy
+  };
+}
+
+function drawGrid() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+
+  const step = Math.max(1, Math.ceil(range / 7));
+  for (let i = -Math.floor(range / step) * step; i <= range; i += step) {
+    const px = worldToCanvas({x:i,y:0}).x;
+    const py = worldToCanvas({x:0,y:i}).y;
+
+    ctx.strokeStyle = i === 0 ? '#7B90A2' : '#DCE5EB';
+    ctx.lineWidth = i === 0 ? 1.5 : 1;
+
+    ctx.beginPath();
+    ctx.moveTo(px, pad);
+    ctx.lineTo(px, canvas.height - pad);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(pad, py);
+    ctx.lineTo(canvas.width - pad, py);
+    ctx.stroke();
+
+    if (i !== 0) {
+      ctx.fillStyle = '#7B90A2';
+      ctx.font = '12px sans-serif';
+      ctx.fillText(i, px + 4, canvas.height/2 + 15);
+      ctx.fillText(i, canvas.width/2 + 6, py - 5);
+    }
+  }
+  ctx.restore();
+}
+
+function drawArrow(vec, color, label) {
+  const o = worldToCanvas({x:0,y:0});
+  const p = worldToCanvas(vec);
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 5;
+  ctx.lineCap = 'round';
+
+  ctx.beginPath();
+  ctx.moveTo(o.x, o.y);
+  ctx.lineTo(p.x, p.y);
+  ctx.stroke();
+
+  const angle = Math.atan2(p.y-o.y, p.x-o.x);
+  const head = 14;
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
+  ctx.lineTo(p.x - head*Math.cos(angle-Math.PI/7), p.y - head*Math.sin(angle-Math.PI/7));
+  ctx.lineTo(p.x - head*Math.cos(angle+Math.PI/7), p.y - head*Math.sin(angle+Math.PI/7));
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, 8, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.font = 'bold 16px sans-serif';
+  ctx.fillText(label, p.x + 12, p.y - 10);
+  ctx.restore();
+}
+
+function drawAngleArc() {
+  const magA = Math.hypot(a.x, a.y);
+  const magB = Math.hypot(b.x, b.y);
+  if (magA < 1e-9 || magB < 1e-9) return;
+
+  let angA = Math.atan2(-a.y, a.x);
+  let angB = Math.atan2(-b.y, b.x);
+
+  let diff = angB - angA;
+  while (diff > Math.PI) diff -= 2*Math.PI;
+  while (diff < -Math.PI) diff += 2*Math.PI;
+
+  const o = worldToCanvas({x:0,y:0});
+  const r = 48;
+
+  ctx.save();
+  ctx.strokeStyle = '#C9901A';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(o.x, o.y, r, angA, angA + diff, diff < 0);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function compute() {
+  range = Math.max(7, Math.ceil(Math.max(Math.abs(a.x), Math.abs(a.y), Math.abs(b.x), Math.abs(b.y))));
+
+  const dot = a.x*b.x + a.y*b.y;
+  const magA = Math.hypot(a.x, a.y);
+  const magB = Math.hypot(b.x, b.y);
+
+  let cos = NaN;
+  let angle = NaN;
+
+  if (magA > 1e-12 && magB > 1e-12) {
+    cos = dot / (magA * magB);
+    cos = Math.max(-1, Math.min(1, cos));
+    angle = Math.acos(cos) * 180 / Math.PI;
+  }
+
+  els.dot.textContent = fmt(dot);
+  els.magA.textContent = fmt(magA);
+  els.magB.textContent = fmt(magB);
+  els.cos.textContent = Number.isFinite(cos) ? fmt(cos) : 'undefined';
+  document.getElementById('cos-header').textContent = els.cos.textContent;
+  els.angle.textContent = Number.isFinite(angle) ? fmt(angle, 1) + '°' : 'undefined';
+
+  els.formula.innerHTML =
+    `a · b = (${fmt(a.x)})(${fmt(b.x)}) + (${fmt(a.y)})(${fmt(b.y)}) = <b>${fmt(dot)}</b><br>` +
+    `cos θ = (a · b) / (|a||b|)<br>` +
+    `cos θ = ${fmt(dot)} / (${fmt(magA)} × ${fmt(magB)}) = <b>${Number.isFinite(cos) ? fmt(cos) : 'undefined'}</b>`;
+
+
+  document.getElementById('coordinates').textContent = 'a = ['+fmt(a.x)+', '+fmt(a.y)+']     b = ['+fmt(b.x)+', '+fmt(b.y)+']';
+  document.getElementById('stage-multiply').textContent = 'x pair: '+fmt(a.x*b.x)+'. y pair: '+fmt(a.y*b.y)+'. Multiply matching coordinates.';
+  document.getElementById('stage-add').textContent = fmt(a.x*b.x)+' + '+fmt(a.y*b.y)+' = '+fmt(dot)+'. This is the dot product.';
+  document.getElementById('stage-length').textContent = '|a| = '+fmt(magA)+'; |b| = '+fmt(magB)+'. Their product is '+fmt(magA*magB)+'.';
+  document.getElementById('stage-divide').textContent = Number.isFinite(cos)?fmt(dot)+' ÷ '+fmt(magA*magB)+' = '+fmt(cos)+'. Length is factored out.':'A zero vector has no direction, so cosine is undefined.';
+  document.getElementById('cs-trace').textContent = [
+    '1  Multiply x coordinates: '+fmt(a.x*b.x),
+    '2  Multiply y coordinates: '+fmt(a.y*b.y),
+    '3  Add → dot product '+fmt(dot),
+    '4  Length product → '+fmt(magA*magB),
+    '5  Divide → cosine '+fmt(cos)
+  ].join('\n');
+  document.getElementById('interpretation').textContent = !Number.isFinite(cos)?'A zero vector has no direction. Set both vectors to nonzero values to compare them.':Math.abs(cos-1)<1e-9?'Same direction. The coordinates and lengths can differ, even though cosine is 1.':Math.abs(cos+1)<1e-9?'Opposite directions. Cosine is −1, regardless of the two lengths.':Math.abs(cos)<1e-9?'Perpendicular directions. The coordinate products cancel: dot product and cosine are both 0.':'The arrows form an angle of '+fmt(angle,1)+'°. Changing length alone changes the dot product, but preserves this cosine.';
+  document.querySelectorAll('[data-preset]').forEach(button=>{
+    const p=button.dataset.preset;
+    const active=p==='same'?Math.abs(cos-1)<1e-9:p==='opposite'?Math.abs(cos+1)<1e-9:p==='orthogonal'?Math.abs(cos)<1e-9:false;
+    if(p!=='default'){button.classList.toggle('cs-on',active);button.setAttribute('aria-pressed',String(active))}
+  });
+  draw();
+}
+
+function draw() {
+  drawGrid();
+  drawAngleArc();
+  drawArrow(a, '#0E7C6B', 'a');
+  drawArrow(b, '#B0234A', 'b');
+}
+
+function syncInputs() {
+  els.ax.value = fmt(a.x, 2);
+  els.ay.value = fmt(a.y, 2);
+  els.bx.value = fmt(b.x, 2);
+  els.by.value = fmt(b.y, 2);
+}
+
+function updateFromInputs() {
+  const values = ['ax','ay','bx','by'].map(id => els[id].valueAsNumber);
+  if (values.some(value => !Number.isFinite(value) || Math.abs(value) > 10000)) return;
+  [a.x,a.y,b.x,b.y] = values;
+  compute();
+}
+
+['ax','ay','bx','by'].forEach(id => els[id].addEventListener('input', updateFromInputs));
+
+function pointerPos(evt) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (evt.clientX - rect.left) * canvas.width / rect.width,
+    y: (evt.clientY - rect.top) * canvas.height / rect.height
+  };
+}
+
+canvas.addEventListener('pointerdown', e => {
+  const p = pointerPos(e);
+  const pa = worldToCanvas(a);
+  const pb = worldToCanvas(b);
+
+  const da = Math.hypot(p.x-pa.x, p.y-pa.y);
+  const db = Math.hypot(p.x-pb.x, p.y-pb.y);
+
+  dragging = da < db ? 'a' : 'b';
+  canvas.setPointerCapture(e.pointerId);
+});
+
+canvas.addEventListener('pointermove', e => {
+  if (!dragging) return;
+  const p = pointerPos(e);
+  const w = canvasToWorld(p.x, p.y);
+  w.x = Math.max(-range, Math.min(range, w.x));
+  w.y = Math.max(-range, Math.min(range, w.y));
+
+  if (dragging === 'a') a = w;
+  else b = w;
+
+  syncInputs();
+  compute();
+});
+
+canvas.addEventListener('pointerup', () => dragging = null);
+canvas.addEventListener('pointercancel', () => dragging = null);
+canvas.addEventListener('lostpointercapture', () => dragging = null);
+
+document.querySelectorAll('[data-preset]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const p = btn.dataset.preset;
+    if (p === 'same') {
+      a = {x: 2.5, y: 3.5};
+      b = {x: 5.0, y: 7.0};
+    } else if (p === 'orthogonal') {
+      a = {x: 4, y: 2};
+      b = {x: -2, y: 4};
+    } else if (p === 'opposite') {
+      a = {x: 3, y: 4};
+      b = {x: -4.5, y: -6};
+    } else {
+      a = {x: 3, y: 4.5};
+      b = {x: 4.8, y: 3.6};
+    }
+    syncInputs();
+    compute();
+  });
+});
+
+compute();
+</script>
+</body>
+</html>

@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Transformer Block Playground</title>
+    <style>
+      :root {
+        --i: #14202e;
+        --i2: #41576c;
+        --i3: #7b90a2;
+        --p: #e6edf1;
+        --w: #fbfcfc;
+        --r: #c2d2dc;
+        --t: #0e7c6b;
+        --q: #b0234a;
+        --g: #c9901a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--p);
+        background-image:
+          linear-gradient(#7896a824 1px, transparent 1px),
+          linear-gradient(90deg, #7896a824 1px, transparent 1px);
+        background-size: 26px 26px;
+        color: var(--i);
+        font:
+          15px/1.5 system-ui,
+          sans-serif;
+      }
+      .bar {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #fbfcfcf5;
+        border-bottom: 1px solid var(--r);
+        display: flex;
+        min-height: 76px;
+      }
+      .brand {
+        width: 285px;
+        padding: 8px 14px;
+        border-right: 1px solid var(--r);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .meta {
+        display: flex;
+        justify-content: space-between;
+      }
+      .k,
+      .label {
+        font: 600 9px monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--i3);
+      }
+      a {
+        color: var(--t);
+      }
+      .meta a {
+        font: 9px monospace;
+      }
+      .name,
+      h1,
+      h3 {
+        font-family: Georgia, serif;
+      }
+      .name {
+        font-size: 21px;
+        font-weight: 600;
+      }
+      .idea {
+        font-size: 12px;
+        color: var(--t);
+      }
+      .live {
+        min-width: 190px;
+        padding: 8px 14px;
+        background: #d6eae6;
+        color: var(--t);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .live b {
+        font: 600 23px monospace;
+      }
+      .live small {
+        color: var(--i2);
+      }
+      .tools {
+        display: flex;
+        overflow: auto;
+        flex: 1;
+      }
+      .group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 12px;
+        border-right: 1px solid var(--r);
+        flex: none;
+      }
+      input[type="range"] {
+        accent-color: var(--t);
+        width: 140px;
+      }
+      .btn {
+        background: #fff;
+        border: 1px solid var(--r);
+        border-radius: 3px;
+        padding: 7px 10px;
+        cursor: pointer;
+      }
+      .btn:hover,
+      .btn.on {
+        background: var(--t);
+        color: #fff;
+      }
+      .primary {
+        background: var(--i);
+        color: #fff;
+      }
+      main {
+        padding: 14px 18px 72px;
+      }
+      .main {
+        max-width: 1680px;
+        margin: auto;
+        display: grid;
+        grid-template-columns: minmax(560px, 1fr) 340px;
+        gap: 14px;
+      }
+      .card {
+        background: var(--w);
+        border: 1px solid var(--r);
+        border-radius: 3px;
+      }
+      .board,
+      .panel {
+        padding: 14px;
+      }
+      .head {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        flex-wrap: wrap;
+        font: 12px monospace;
+        color: var(--i2);
+      }
+      .visual {
+        margin: 14px 0;
+        background: #fff;
+        border: 1px solid var(--r);
+        padding: 18px;
+        min-height: 190px;
+      }
+      .bars {
+        display: flex;
+        align-items: end;
+        gap: 12px;
+        height: 120px;
+      }
+      .bars i {
+        display: block;
+        width: 34px;
+        background: var(--t);
+        min-height: 3px;
+      }
+      .formula,
+      .trace {
+        background: #fff;
+        border: 1px solid var(--r);
+        border-left: 2px solid var(--t);
+        padding: 10px;
+        font: 11px/1.7 monospace;
+        white-space: pre-wrap;
+      }
+      .trace {
+        min-height: 120px;
+      }
+      .stages {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        border-top: 1px solid var(--r);
+        padding-top: 10px;
+        margin-top: 12px;
+      }
+      .stage {
+        padding: 8px;
+        border: 1px solid var(--r);
+        min-height: 80px;
+        font-size: 12px;
+        color: var(--i2);
+      }
+      .stage b {
+        display: block;
+        font: 600 10px monospace;
+        color: var(--t);
+      }
+      h2 {
+        font: 600 10px monospace;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--i3);
+        border-bottom: 1px solid var(--r);
+        padding-bottom: 8px;
+      }
+      .metric {
+        border-left: 2px solid var(--r);
+        padding-left: 9px;
+        margin: 12px 0;
+      }
+      .metric b {
+        font: 600 23px monospace;
+        display: block;
+      }
+      .metric small {
+        font: 10px monospace;
+        text-transform: uppercase;
+        color: var(--i3);
+      }
+      .note {
+        font-size: 13px;
+        color: var(--i2);
+      }
+      .story {
+        max-width: 1180px;
+        margin: auto;
+        padding: 58px 20px 0;
+      }
+      .title {
+        font-size: clamp(30px, 5vw, 52px);
+        line-height: 1.02;
+        max-width: 19ch;
+      }
+      .title em {
+        color: var(--t);
+      }
+      .lede {
+        max-width: 72ch;
+        color: var(--i2);
+        font-size: 17px;
+      }
+      .notes {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 22px;
+        border-top: 1px solid var(--r);
+        padding-top: 26px;
+        margin-top: 34px;
+      }
+      .note-block p {
+        color: var(--i2);
+        font-size: 14px;
+      }
+      .foot {
+        font: 11px monospace;
+        margin-top: 30px;
+      }
+      @media (max-width: 1050px) {
+        .bar {
+          display: block;
+        }
+        .brand {
+          width: 100%;
+          min-height: 68px;
+          border: 0;
+          border-bottom: 1px solid var(--r);
+        }
+        .tools {
+          height: 70px;
+        }
+        .main {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 660px) {
+        .stages {
+          grid-template-columns: 1fr 1fr;
+        }
+        main {
+          padding: 10px 8px;
+        }
+        .story {
+          padding-top: 36px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="bar">
+      <div class="brand">
+        <div class="meta">
+          <span class="k">LLM first principles · 15/35</span
+          ><a href="#learn">Learn ↓</a>
+        </div>
+        <strong class="name">Transformer Block</strong
+        ><span class="idea"
+          >Attention, FFN, residuals, and norm form one layer.</span
+        >
+      </div>
+      <div class="live">
+        <span class="k">Live result</span><b id="result">—</b
+        ><small id="sub">move the control</small>
+      </div>
+      <div class="tools">
+        <div class="group">
+          <span class="label">Attention mix</span
+          ><input
+            id="control"
+            type="range"
+            min="0"
+            max="100"
+            value="50"
+          /><output id="out">50</output>
+        </div>
+        <div class="group">
+          <span class="label">Try</span
+          ><button class="btn" id="try">Example</button>
+        </div>
+        <div class="group">
+          <span class="label">Start</span
+          ><button class="btn primary" id="reset">Reset</button>
+        </div>
+      </div>
+    </header>
+    <main>
+      <div class="main">
+        <section class="card board">
+          <div class="head">
+            <span>Attention, FFN, residuals, and norm form one layer.</span
+            ><span>one mechanism · one visible result</span>
+          </div>
+          <div class="visual">
+            <div class="formula" id="formula"></div>
+            <div class="bars" id="bars"></div>
+            <p class="note" id="explain"></p>
+          </div>
+          <div class="stages">
+            <div class="stage"><b>1 · input</b><span id="s1"></span></div>
+            <div class="stage"><b>2 · transform</b><span id="s2"></span></div>
+            <div class="stage"><b>3 · compare</b><span id="s3"></span></div>
+            <div class="stage"><b>4 · output</b><span id="s4"></span></div>
+          </div>
+        </section>
+        <aside>
+          <section class="card panel">
+            <h2>Readout <span>current state</span></h2>
+            <div class="metric">
+              <b id="metric"></b><small>primary quantity</small>
+            </div>
+            <div class="metric">
+              <b id="secondary"></b><small>supporting quantity</small>
+            </div>
+            <p class="note" id="insight"></p>
+          </section>
+          <section class="card panel">
+            <h2>Trace <span>what just changed</span></h2>
+            <div class="trace" id="trace"></div>
+          </section>
+        </aside>
+      </div>
+      <article class="story" id="learn">
+        <p class="k">LLM first principles · Transformer Block Playground</p>
+        <h1 class="title">
+          Transformer Block makes one hidden mechanism <em>visible.</em>
+        </h1>
+        <p class="lede">
+          Attention, FFN, residuals, and norm form one layer. This playground
+          keeps the moving parts small so the calculation can be followed from
+          input to output.
+        </p>
+        <div class="notes">
+          <section class="note-block">
+            <h3>Read the playground</h3>
+            <p>
+              Move the control and watch the highlighted result change. The four
+              stages describe the mechanism in the same order as the code.
+            </p>
+          </section>
+          <section class="note-block">
+            <h3>What this isolates</h3>
+            <p>
+              Attention, FFN, residuals, and norm form one layer. The toy values
+              are teaching data; real models use larger vectors, matrices,
+              vocabularies, and datasets.
+            </p>
+          </section>
+          <section class="note-block">
+            <h3>Why it matters</h3>
+            <p>
+              This mechanism is one link in the first-principles chain from text
+              to tokens, vectors, attention, prediction, and learning.
+            </p>
+          </section>
+          <section class="note-block">
+            <h3>Terms</h3>
+            <p>
+              <b>input</b> is what enters the operation. <b>transform</b> is the
+              calculation. <b>output</b> is what the next mechanism receives.
+            </p>
+          </section>
+          <section class="note-block">
+            <h3>Try this</h3>
+            <ol>
+              <li>Move the control slowly and narrate each stage.</li>
+              <li>Press Example to jump to a contrasting state.</li>
+              <li>Reset and reproduce the change from the beginning.</li>
+            </ol>
+          </section>
+        </div>
+        <p class="foot">
+          <a href="index.html">← Playground explorer</a> ·
+          <a href="llm-playground-roadmap.md">Learning roadmap</a>
+        </p>
+      </article>
+    </main>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      let v = 50;
+      const kind = "toggle";
+      function render(action = "Moved control") {
+        let x = v / 100,
+          token = 1,
+          attended = 2 * x,
+          transformed = Math.tanh(attended),
+          a = token + attended,
+          b = a + transformed,
+          label = "attention contribution";
+        $("result").textContent = typeof a === "number" ? a.toFixed(3) : a;
+        $("metric").textContent = a.toFixed(3);
+        $("secondary").textContent = b.toFixed(3);
+        $("out").textContent = v;
+        $("sub").textContent = label;
+        $("formula").textContent =
+          kind === "temperature"
+            ? "probability ∝ exp(score / temperature)"
+            : kind === "probability"
+              ? "loss = −log(correct probability)"
+              : kind === "learning"
+                ? "new weight = old weight − learning rate × gradient"
+                : kind === "model"
+                  ? "parameters ≈ layers × width²"
+                  : kind === "toggle"
+                    ? "attention → residual → feed-forward → residual"
+                    : "calculation: input → output";
+        const heights = [
+          Math.abs(a),
+          Math.abs(b),
+          Math.abs(a - b),
+          Math.abs(a + b),
+        ].map((z) => Math.min(100, Math.max(3, z * 70)));
+        $("bars").innerHTML = heights
+          .map((h, i) => '<i style="height:' + h + 'px"></i>')
+          .join("");
+        $("explain").textContent = "A transformer block is a sequence, not one mysterious operation: attention changes the token, a residual keeps the old token, then the feed-forward network transforms it again.";
+        $("s1").textContent = "Input token x = " + token.toFixed(2) + ".";
+        $("s2").textContent = "Attention contribution = " + attended.toFixed(2) + ".";
+        $("s3").textContent = "Residual: x + attention = " + a.toFixed(2) + ".";
+        $("s4").textContent = "FFN + second residual = " + b.toFixed(2) + ".";
+        $("insight").textContent =
+          "Residual connections let each sublayer add information without erasing the representation it received.";
+        $("trace").textContent = [
+          action,
+          "Control: " + v,
+          "Primary: " + a.toFixed(3),
+          "Secondary: " + b.toFixed(3),
+        ].join("\\n");
+      }
+      $("control").oninput = (e) => {
+        v = +e.target.value;
+        render("Changed control");
+      };
+      $("try").onclick = () => {
+        v = 80;
+        $("control").value = 80;
+        render("Loaded example");
+      };
+      $("reset").onclick = () => {
+        v = 50;
+        $("control").value = 50;
+        render("Reset");
+      };
+      render();
+    </script>
+  </body>
+</html>

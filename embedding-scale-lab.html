@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Embedding scale lab</title>
+    <style>
+      :root {
+        --i: #14202e;
+        --i2: #41576c;
+        --i3: #7b90a2;
+        --p: #e6edf1;
+        --w: #fbfcfc;
+        --r: #c2d2dc;
+        --t: #0e7c6b;
+        --q: #b0234a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--p);
+        background-image:
+          linear-gradient(#7896a824 1px, transparent 1px),
+          linear-gradient(90deg, #7896a824 1px, transparent 1px);
+        background-size: 26px 26px;
+        color: var(--i);
+        font:
+          15px/1.5 system-ui,
+          sans-serif;
+      }
+      .bar {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #fbfcfcf5;
+        border-bottom: 1px solid var(--r);
+        display: flex;
+        min-height: 76px;
+      }
+      .brand {
+        width: 260px;
+        padding: 9px 14px 7px;
+        border-right: 1px solid var(--r);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .meta {
+        display: flex;
+        justify-content: space-between;
+        order: 2;
+        margin-top: 3px;
+        opacity: 0.65;
+      }
+      .meta a {
+        font: 8px monospace;
+        opacity: 0.8;
+      }
+      .k,
+      .label,
+      dt {
+        font: 600 9px monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--i3);
+      }
+      a {
+        color: var(--t);
+      }
+      .name,
+      h1,
+      h3 {
+        font-family: Georgia, serif;
+      }
+      .name {
+        font-size: 21px;
+        font-weight: 600;
+      }
+      .idea {
+        font-size: 10px;
+        color: var(--i3);
+        order: 3;
+        white-space: nowrap;
+      }
+      .name { order: 1; }
+      .live {
+        min-width: 180px;
+        padding: 8px 14px;
+        background: #d6eae6;
+        color: var(--t);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .live b {
+        font: 600 25px monospace;
+      }
+      .live small {
+        color: var(--i2);
+      }
+      .tools {
+        display: flex;
+        overflow: auto;
+        flex: 1;
+      }
+      .group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 12px;
+        border-right: 1px solid var(--r);
+        flex: none;
+      }
+      .btn {
+        background: #fff;
+        border: 1px solid var(--r);
+        border-radius: 3px;
+        padding: 7px 10px;
+        cursor: pointer;
+      }
+      .btn:hover,
+      .btn.on {
+        background: var(--t);
+        color: #fff;
+      }
+      .primary {
+        background: var(--i);
+        color: #fff;
+      }
+      input {
+        accent-color: var(--t);
+      }
+      main {
+        padding: 14px 18px 70px;
+      }
+      .main {
+        max-width: 1680px;
+        margin: auto;
+        display: grid;
+        grid-template-columns: minmax(560px, 1fr) 340px;
+        gap: 14px;
+      }
+      .card {
+        background: var(--w);
+        border: 1px solid var(--r);
+        border-radius: 3px;
+      }
+      .board,
+      .panel {
+        padding: 14px;
+      }
+      .head {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        font: 12px monospace;
+        color: var(--i2);
+      }
+      .vectors {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin: 14px 0;
+      }
+      .vec {
+        border: 1px solid var(--r);
+        padding: 12px;
+        background: #fff;
+      }
+      .vec.a {
+        border-left: 3px solid var(--t);
+      }
+      .vec.b {
+        border-left: 3px solid var(--q);
+      }
+      h3 {
+        margin: 0;
+        font-size: 18px;
+      }
+      .values {
+        font: 12px monospace;
+        line-height: 2;
+      }
+      .values span {
+        background: #edf3f4;
+        border: 1px solid var(--r);
+        padding: 3px;
+        margin: 2px;
+      }
+      .bars {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+      .dim {
+        border: 1px solid var(--r);
+        padding: 9px;
+        background: #fff;
+        font: 11px monospace;
+      }
+      .track {
+        height: 8px;
+        background: #edf1f3;
+        margin-top: 9px;
+        position: relative;
+      }
+      .track:after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        height: 14px;
+        top: -3px;
+        border-left: 1px solid var(--i3);
+      }
+      .fill {
+        height: 8px;
+        position: absolute;
+        background: var(--t);
+      }
+      .fill.b {
+        background: var(--q);
+      }
+      .stages {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        border-top: 1px solid var(--r);
+        padding-top: 10px;
+        margin-top: 12px;
+      }
+      .stage {
+        padding: 8px;
+        border: 1px solid var(--r);
+        min-height: 80px;
+        font-size: 12px;
+        color: var(--i2);
+      }
+      .stage b {
+        display: block;
+        font: 600 10px monospace;
+        color: var(--t);
+      }
+      h2 {
+        font: 600 10px monospace;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--i3);
+        border-bottom: 1px solid var(--r);
+        padding-bottom: 8px;
+      }
+      .metric {
+        border-left: 2px solid var(--r);
+        padding-left: 9px;
+        margin: 12px 0;
+      }
+      .metric b {
+        font: 600 23px monospace;
+        display: block;
+      }
+      .metric small {
+        font: 10px monospace;
+        text-transform: uppercase;
+        color: var(--i3);
+      }
+      .trace,
+      .formula {
+        background: #fff;
+        border: 1px solid var(--r);
+        border-left: 2px solid var(--t);
+        padding: 10px;
+        font: 11px/1.7 monospace;
+        white-space: pre-wrap;
+      }
+      .trace {
+        min-height: 120px;
+      }
+      .story {
+        display: block;
+        max-width: 1180px;
+        margin: auto;
+        padding: 58px 20px 0;
+      }
+      .title {
+        font-size: clamp(30px, 5vw, 52px);
+        line-height: 1.02;
+        max-width: 19ch;
+      }
+      .title em {
+        color: var(--t);
+      }
+      .lede {
+        max-width: 72ch;
+        color: var(--i2);
+        font-size: 17px;
+      }
+      .notes {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 22px;
+        border-top: 1px solid var(--r);
+        padding-top: 26px;
+        margin-top: 34px;
+      }
+      .note p,
+      .note dd {
+        color: var(--i2);
+        font-size: 14px;
+      }
+      .foot {
+        font: 11px monospace;
+        margin-top: 30px;
+      }
+      @media (max-width: 1050px) {
+        .bar {
+          display: block;
+        }
+        .brand {
+          width: 100%;
+          min-height: 68px;
+          border: 0;
+          border-bottom: 1px solid var(--r);
+        }
+        .tools {
+          height: 70px;
+        }
+        .main {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 660px) {
+        .vectors {
+          grid-template-columns: 1fr;
+        }
+        .bars {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .stages {
+          grid-template-columns: 1fr 1fr;
+        }
+        main {
+          padding: 10px 8px;
+        }
+        .story {
+          padding-top: 36px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="bar">
+      <div class="brand">
+        <strong class="name">Embedding scale lab</strong>
+        <span class="idea">Magnitude changes. Direction can stay.</span>
+        <div class="meta">
+          <span class="k">LLM first principles · 03B/35</span
+          ><a href="#learn" id="learnLink">Learn ↓</a>
+        </div>
+      </div>
+      <div class="live">
+        <span class="k">Cosine similarity</span><b id="cos">—</b
+        ><small>scale does not decide direction</small>
+      </div>
+      <div class="tools">
+        <div class="group">
+          <span class="label">Scale A</span
+          ><label
+            ><output id="scaleOut">1.0×</output
+            ><input id="scale" type="range" min="0" max="3" step=".1" value="1"
+          /></label>
+        </div>
+        <div class="group">
+          <span class="label">Normalize</span
+          ><button class="btn" id="normalize">Unit length</button>
+        </div>
+        <div class="group">
+          <span class="label">Try</span
+          ><button class="btn" id="same">Same direction</button
+          ><button class="btn" id="turn">Turn A</button>
+        </div>
+        <div class="group">
+          <span class="label">Start</span
+          ><button class="btn primary" id="reset">Reset</button>
+        </div>
+      </div>
+    </header>
+    <main>
+      <div class="main">
+        <section class="card board">
+          <div class="head">
+            <span>one direction · many possible lengths</span
+            ><span>raw values vs normalized values</span>
+          </div>
+          <div class="vectors">
+            <div class="vec a">
+              <h3>Vector A</h3>
+              <p class="values" id="av"></p>
+            </div>
+            <div class="vec b">
+              <h3>Vector B</h3>
+              <p class="values" id="bv"></p>
+            </div>
+          </div>
+          <div class="bars" id="bars"></div>
+          <p class="note" id="note"></p>
+          <div class="stages">
+            <div class="stage"><b>1 · store</b><span id="s1"></span></div>
+            <div class="stage"><b>2 · scale</b><span id="s2"></span></div>
+            <div class="stage"><b>3 · normalize</b><span id="s3"></span></div>
+            <div class="stage"><b>4 · compare</b><span id="s4"></span></div>
+          </div>
+        </section>
+        <aside>
+          <section class="card panel">
+            <h2>Readout</h2>
+            <div class="metric"><b id="la"></b><small>length A</small></div>
+            <div class="metric"><b id="lb"></b><small>length B</small></div>
+            <div class="metric"><b id="ang"></b><small>angle</small></div>
+            <p class="note" id="insight"></p>
+          </section>
+          <section class="card panel">
+            <h2>Trace</h2>
+            <div class="trace" id="trace"></div>
+          </section>
+        </aside>
+      </div>
+      <article class="story" id="learn">
+        <p class="k">Embedding values · vector scale · normalization</p>
+        <h1 class="title">
+          A bigger number does not mean a <em>stronger meaning.</em>
+        </h1>
+        <p class="lede">
+          Raw embedding values depend on the model and training process.
+          Multiplying every coordinate by the same positive number makes a
+          vector longer without changing its direction.
+        </p>
+        <div class="notes">
+          <section class="note">
+            <h3>Why −1 to +1?</h3>
+            <p>
+              The earlier dimensions lab uses that range to keep bars readable.
+              It is a display choice, not a universal rule for real embeddings.
+            </p>
+          </section>
+          <section class="note">
+            <h3>Scale is not meaning</h3>
+            <p>
+              A coordinate of 0.8 is not automatically more meaningful than one
+              of 0.2. Meaning lives in the complete pattern.
+            </p>
+          </section>
+          <section class="note">
+            <h3>Normalization</h3>
+            <p>
+              Unit normalization divides every coordinate by the vector length.
+              Coordinates shrink, the length becomes 1, and direction stays.
+            </p>
+          </section>
+          <section class="note">
+            <h3>Formula</h3>
+            <div class="formula">
+              cosine(kA,B) = cosine(A,B) for k &gt; 0<br />cosine = dot / (|A| ×
+              |B|)
+            </div>
+          </section>
+          <section class="note">
+            <h3>Terms</h3>
+            <dl>
+              <dt>magnitude</dt>
+              <dd>Vector length.</dd>
+              <dt>raw embedding</dt>
+              <dd>Values before normalization.</dd>
+              <dt>unit vector</dt>
+              <dd>Vector with length 1.</dd>
+            </dl>
+          </section>
+          <section class="note">
+            <h3>Try this</h3>
+            <ol>
+              <li>Move Scale A and watch length versus cosine.</li>
+              <li>Press Same direction, then scale A.</li>
+              <li>Press Unit length, then Turn A.</li>
+            </ol>
+          </section>
+        </div>
+        <p class="foot">
+          <a href="embedding-dimensions-lab.html">← Embedding dimensions</a> ·
+          <a href="llm-playground-roadmap.md">Learning roadmap</a>
+        </p>
+      </article>
+    </main>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      let A = [0.8, 0.6, 0.4, -0.2],
+        B = [0.5, 0.7, 0.2, 0.6],
+        scale = 1,
+        unit = false;
+      const len = (v) => Math.hypot(...v),
+        cos = (a, b) =>
+          a.reduce((s, x, i) => s + x * b[i], 0) / (len(a) * len(b));
+      function render(action = "Loaded raw embeddings") {
+        let a = A.map((x) => x * scale),
+          b = [...B];
+        if (unit) {
+          a = a.map((x) => x / len(a));
+          b = b.map((x) => x / len(b));
+        }
+        const c = cos(a, b),
+          la = len(a),
+          lb = len(b);
+        $("cos").textContent = c.toFixed(3);
+        $("la").textContent = la.toFixed(3);
+        $("lb").textContent = lb.toFixed(3);
+        $("ang").textContent =
+          ((Math.acos(c) * 180) / Math.PI).toFixed(1) + "°";
+        $("scaleOut").textContent = scale.toFixed(1) + "×";
+        $("av").innerHTML = a
+          .map((x, i) => `<span>D${i + 1}: <b>${x.toFixed(3)}</b></span>`)
+          .join("");
+        $("bv").innerHTML = b
+          .map((x, i) => `<span>D${i + 1}: <b>${x.toFixed(3)}</b></span>`)
+          .join("");
+        $("bars").innerHTML = a
+          .map(
+            (x, i) =>
+              `<div class="dim">D${i + 1}<div class="track"><div class="fill" style="left:${x < 0 ? 50 + x * 50 : 50}%;width:${Math.min(50, Math.abs(x) * 50)}%"></div><div class="fill b" style="left:${b[i] < 0 ? 50 + b[i] * 50 : 50}%;width:${Math.min(50, Math.abs(b[i]) * 50)}%"></div></div>${x.toFixed(2)} / ${b[i].toFixed(2)}</div>`,
+          )
+          .join("");
+        $("note").textContent = unit
+          ? "Both vectors are unit length. Their coordinates changed, but direction did not."
+          : scale === 1
+            ? "The −1 to +1 bars are a display range. Real embedding values vary by model."
+            : "A is " +
+              scale.toFixed(1) +
+              "× longer; cosine still measures direction.";
+        $("insight").textContent =
+          "Changing length changes the dot product, but not cosine when direction stays fixed.";
+        $("s1").textContent = "A begins as four stored coordinates.";
+        $("s2").textContent =
+          "Every A coordinate is multiplied by " + scale.toFixed(1) + ".";
+        $("s3").textContent = unit
+          ? "Divide each vector by its length."
+          : "Optional: normalize both vectors.";
+        $("s4").textContent =
+          "Angle " +
+          ((Math.acos(c) * 180) / Math.PI).toFixed(1) +
+          "°; cosine " +
+          c.toFixed(3) +
+          ".";
+        $("trace").textContent = [
+          action,
+          "A length: " + la.toFixed(3),
+          "B length: " + lb.toFixed(3),
+          "Angle: " + ((Math.acos(c) * 180) / Math.PI).toFixed(1) + "°",
+          "Cosine: " + c.toFixed(3),
+        ].join("\n");
+        $("normalize").classList.toggle("on", unit);
+      }
+      $("scale").oninput = (e) => {
+        scale = +e.target.value;
+        unit = false;
+        render("Changed scale of A");
+      };
+      $("normalize").onclick = () => {
+        unit = !unit;
+        render(unit ? "Normalized both vectors" : "Restored raw values");
+      };
+      $("same").onclick = () => {
+        A = [0.8, 0.6, 0.4, -0.2];
+        B = [1.6, 1.2, 0.8, -0.4];
+        scale = 1;
+        unit = false;
+        render("Loaded same-direction vectors");
+      };
+      $("turn").onclick = () => {
+        A = [0.8, -0.2, 0.9, 0.4];
+        scale = 1;
+        unit = false;
+        render("Turned A");
+      };
+      $("reset").onclick = () => {
+        A = [0.8, 0.6, 0.4, -0.2];
+        B = [0.5, 0.7, 0.2, 0.6];
+        scale = 1;
+        unit = false;
+        render("Reset raw embeddings");
+      };
+      render();
+    </script>
+  </body>
+</html>
