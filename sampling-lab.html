@@ -473,7 +473,7 @@
           "Temperature: " + temperature.toFixed(2),
           "Probabilities: [" + probabilities.map((p) => p.toFixed(3)).join(", ") + "]",
           "Illustrative draw: " + winner,
-        ].join("\\n");
+        ].join("\n");
       }
       $("control").oninput = (e) => {
         v = +e.target.value;

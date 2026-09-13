@@ -170,11 +170,34 @@
       .sentence-bars span { flex: 1; min-height: 4px; background: var(--t); position: relative; }
       .sentence-bars span b { position: absolute; bottom: 100%; left: 0; font: 9px monospace; color: var(--i2); white-space: nowrap; }
       .sentence-table { display: grid; gap: 4px; margin-top: 10px; font: 10px monospace; }
-      .sentence-table div { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; border-bottom: 1px dotted var(--r); padding: 3px 0; }
+      .sentence-table div { display: grid; grid-template-columns: 1fr 1fr 1fr 0.65fr; gap: 5px; border-bottom: 1px dotted var(--r); padding: 3px 0; }
       .sentence-table .selected-row { color: var(--t); font-weight: 700; }
       .sentence-score-list { display: grid; gap: 4px; margin-top: 8px; font: 10px monospace; }
       .sentence-score-list div { display: flex; justify-content: space-between; }
+      .network-wrap { margin-bottom: 14px; border: 1px solid var(--r); background: #fbfcfc; padding: 8px; overflow-x: auto; }
+      .network-wrap svg { display: block; width: 100%; min-width: 900px; height: auto; }
+      .network-wrap svg text { font-family: monospace; }
+      .att-dot { cursor: pointer; transition: r .15s; }
+      .att-dot:hover { stroke: var(--g); stroke-width: 3; }
+      [data-select] { cursor: pointer; }
+      .network-label { font: 600 11px monospace; fill: var(--i2); }
+      .network-muted { font: 10px monospace; fill: var(--i3); }
+      .network-node { fill: #fff; stroke: var(--r); stroke-width: 1.5; }
+      .network-node.selected { fill: #d6eae6; stroke: var(--t); stroke-width: 2.5; }
+      .network-node-text, .network-cell-text { font: 600 12px monospace; fill: var(--i); }
+      .network-q { fill: var(--t); stroke: var(--t); stroke-width: 2; }
+      .network-cell { fill: var(--t); stroke: #fff; stroke-width: 2; }
+      .network-cell.selected { stroke: var(--g); stroke-width: 3; }
+      .network-link { stroke: var(--r); stroke-width: 1.5; }
+      .network-output { fill: var(--t); }
+      .matrix-wrap { margin: 10px 0 12px; overflow-x: auto; }
+      .attention-matrix { display: grid; grid-template-columns: 38px repeat(4, minmax(42px, 1fr)); gap: 3px; min-width: 270px; font: 9px monospace; text-align: center; }
+      .attention-matrix span { padding: 5px 2px; background: #edf3f4; border: 1px solid #d6e1e5; }
+      .attention-matrix .matrix-label { background: transparent; border: 0; color: var(--i3); }
+      .attention-matrix .matrix-cell { color: var(--i); transition: background .15s; }
+      .attention-matrix .matrix-cell.selected-row { outline: 2px solid var(--t); outline-offset: -2px; font-weight: 700; }
       .sentence-context { font: 600 20px monospace; color: var(--t); padding: 24px 0; }
+      .sentence-contrib { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--r); font: 10px/1.7 monospace; color: var(--i2); white-space: pre-wrap; }
       @media (max-width: 760px) { .attention-sentence-flow { grid-template-columns: 1fr; } }
       .bars {
         display: flex;
@@ -328,7 +351,7 @@
       </div>
       <div class="tools">
         <div class="group">
-          <span class="label">Control</span
+          <span class="label">Query token</span
           ><input
             id="control"
             type="range"
@@ -361,10 +384,10 @@
             <p class="note" id="explain"></p>
           </div>
           <div class="stages">
-            <div class="stage"><b>1 · input</b><span id="s1"></span></div>
-            <div class="stage"><b>2 · transform</b><span id="s2"></span></div>
-            <div class="stage"><b>3 · compare</b><span id="s3"></span></div>
-            <div class="stage"><b>4 · output</b><span id="s4"></span></div>
+            <div class="stage"><b>1 · tokens → Q, K, V</b><span id="s1"></span></div>
+            <div class="stage"><b>2 · scores = Q · Kᵀ</b><span id="s2"></span></div>
+            <div class="stage"><b>3 · weights = softmax</b><span id="s3"></span></div>
+            <div class="stage"><b>4 · context = Σ w × V</b><span id="s4"></span></div>
           </div>
         </section>
         <aside>
@@ -528,7 +551,7 @@
           "Control: " + v,
           "Primary: " + a.toFixed(3),
           "Secondary: " + b.toFixed(3),
-        ].join("\\n");
+        ].join("\n");
       }
       $("control").oninput = (e) => {
         v = +e.target.value;
@@ -548,31 +571,107 @@
     </script>
     <script>
       const sentenceVisual = document.querySelector('.visual');
-      sentenceVisual.innerHTML = '<div class="attention-sentence-flow"><div class="sentence-input"><h3>Input · Q, K, V</h3><div class="sentence-tokens" id="sentenceTokens"></div><p class="note" id="sentenceQ"></p><div class="sentence-table" id="sentenceTable"></div><p class="note">The selected token supplies Q. Every row supplies a K and a V.</p></div><div class="sentence-transform"><h3>Transform · attend</h3><div class="formula" id="sentenceFormula"></div><div class="sentence-score-list" id="sentenceScores"></div><div class="sentence-bars" id="sentenceBars"></div><p class="note" id="sentenceExplain"></p></div><div class="sentence-output"><h3>Output · context vector</h3><div class="sentence-context" id="sentenceContext"></div><p class="note">The weighted sum of the visible V vectors.</p></div></div>';
+      sentenceVisual.innerHTML = '<div class="network-wrap"><svg id="attentionNetwork" viewBox="0 0 1000 360" role="img" aria-label="Attention flow diagram"></svg></div><div class="attention-sentence-flow"><div class="sentence-input"><h3>Input · Q, K, V</h3><div class="sentence-tokens" id="sentenceTokens"></div><p class="note" id="sentenceQ"></p><div class="sentence-table" id="sentenceTable"></div><p class="note">The selected token supplies Q. Every row supplies a K and a V.</p></div><div class="sentence-transform"><h3>Attention map · all rows</h3><p class="note">Each row is one query; each column is a key. Darker cells mean stronger attention.</p><div class="matrix-wrap"><div class="attention-matrix" id="attentionMatrix"></div></div><div class="formula" id="sentenceFormula"></div><div class="sentence-score-list" id="sentenceScores"></div><div class="sentence-bars" id="sentenceBars"></div><p class="note" id="sentenceExplain"></p></div><div class="sentence-output"><h3>Output · weighted V sum</h3><div class="sentence-context" id="sentenceContext"></div><div class="sentence-contrib" id="sentenceContrib"></div><p class="note">The highlighted row determines this context vector.</p></div></div>';
       const sentenceWords = ['the', 'cat', 'sat', 'outside'];
       const sentenceTokens = document.getElementById('sentenceTokens');
       sentenceTokens.innerHTML = sentenceWords.map((word, i) => '<button class="sentence-token" data-index="' + i + '">' + word + '</button>').join('');
       function renderSentence(action = 'Changed selected token') {
         const selected = Math.min(3, Math.floor((+document.getElementById('control').value / 100) * 4));
-        const q = [selected * .7 + .2, 1];
-        const keys = sentenceWords.map((_, i) => [i * .55 + .1, i === selected ? 1 : .35]);
+        const queries = sentenceWords.map((_, i) => [i * .7 + .2, 1]);
+        const q = queries[selected];
+        const keys = sentenceWords.map((_, i) => [i * .55 + .1, .35]);
         const values = sentenceWords.map((_, i) => [i / 3, 1 - i / 4]);
         const scores = keys.map(k => q[0] * k[0] + q[1] * k[1]);
         const exps = scores.map(s => Math.exp(s));
         const total = exps.reduce((s, n) => s + n, 0);
         const weights = exps.map(n => n / total);
         const context = values.reduce((o, val, i) => [o[0] + weights[i] * val[0], o[1] + weights[i] * val[1]], [0, 0]);
+        const allScores = queries.map(rowQ => keys.map(k => rowQ[0] * k[0] + rowQ[1] * k[1]));
+        const allRows = allScores.map(rowScores => { const e = rowScores.map(Math.exp); const t = e.reduce((a, n) => a + n, 0); return e.map(n => n / t); });
+        const allContexts = allRows.map(row => values.reduce((o, val, i) => [o[0] + row[i] * val[0], o[1] + row[i] * val[1]], [0, 0]));
+        // Transformer-Explainer style flow: token → Q/K/V stripes → attention box
+        // (Key list on top, Query list on the left, weight-dot grid, Value list
+        // below) → Out node → per-token context rows.
+        const network = document.getElementById('attentionNetwork');
+        const C = { q: '#2e63d6', k: '#c8324f', v: '#178a5a', o: '#6a4fd8' };
+        const tokenY = i => 80 + i * 64;
+        const kX = j => 540 + j * 40, qY = i => 150 + i * 40, kyL = j => 76 + j * 13, vyL = j => 300 + j * 13;
+        const OUT = [775, 250];
+        const fmt = v => v.map(n => n.toFixed(2)).join('  ');
+        const txt = (x, y, t, extra) => '<text x="' + x + '" y="' + y + '" ' + (extra || '') + '>' + t + '</text>';
+        const ribbon = (x1, y1, x2, y2, color, op, w) => '<path d="M' + x1 + ' ' + y1 + ' C' + (x1 + 80) + ' ' + y1 + ', ' + (x2 - 80) + ' ' + y2 + ', ' + x2 + ' ' + y2 + '" fill="none" stroke="' + color + '" stroke-opacity="' + op.toFixed(2) + '" stroke-width="' + w.toFixed(2) + '" stroke-linecap="round"/>';
+        const stripe = (x, y, letter, color, vec, on) => txt(x - 4, y + 9, letter, 'text-anchor="end" font-weight="700" font-size="9" fill="' + color + '"') + '<rect x="' + x + '" y="' + y + '" width="74" height="12" rx="2" fill="' + color + '" fill-opacity="' + (on ? .32 : .14) + '"/>' + txt(x + 37, y + 9, fmt(vec), 'text-anchor="middle" font-size="8.5" fill="var(--i)"');
+        const svgParts = ['<rect width="1000" height="360" fill="transparent"/>'];
+        [['Q', 'query', C.q], ['K', 'key', C.k], ['V', 'value', C.v], ['●', 'attention weight', C.o]].forEach(([l, t, c], i) => {
+          const x = 20 + i * 140;
+          svgParts.push('<rect x="' + x + '" y="10" width="10" height="10" rx="2" fill="' + c + '"/>' + txt(x + 15, 19, l + ' · ' + t, 'class="network-muted"'));
+        });
+        svgParts.push(txt(20, 46, 'TOKENS → Q, K, V', 'class="network-label"'), txt(340, 46, 'ATTENTION · softmax(Q · Kᵀ)', 'class="network-label"'), txt(826, 46, 'CONTEXT · Σ w × V', 'class="network-label"'));
+        svgParts.push('<rect x="330" y="54" width="400" height="298" rx="4" fill="#fff" stroke="var(--r)"/>');
+        // ribbons from stripes into the box (drawn first so they sit under everything)
+        sentenceWords.forEach((_, i) => {
+          const y = tokenY(i), on = i === selected;
+          svgParts.push(ribbon(214, y - 16, 400, qY(i), C.q, on ? .55 : .12, 7));
+          svgParts.push(ribbon(214, y, 400, kyL(i), C.k, .16, 7));
+          svgParts.push(ribbon(214, y + 16, 400, vyL(i), C.v, .16, 7));
+        });
+        // tokens + Q/K/V stripes
+        sentenceWords.forEach((word, i) => {
+          const y = tokenY(i), on = i === selected;
+          svgParts.push('<g data-select="' + i + '"><rect x="20" y="' + (y - 13) + '" width="84" height="26" rx="5" class="network-node' + (on ? ' selected' : '') + '"/>' + txt(62, y + 4, word, 'text-anchor="middle" class="network-node-text"') + '</g>');
+          svgParts.push(stripe(140, y - 22, 'Q', C.q, queries[i], on), stripe(140, y - 6, 'K', C.k, keys[i], false), stripe(140, y + 10, 'V', C.v, values[i], false));
+        });
+        // Key list (top) → column tops
+        svgParts.push(txt(380, 66, 'Key', 'text-anchor="middle" font-weight="700" font-size="10" fill="' + C.k + '"'));
+        sentenceWords.forEach((word, j) => {
+          const y = kyL(j);
+          svgParts.push('<line x1="400" y1="' + y + '" x2="410" y2="' + y + '" stroke="' + C.k + '" stroke-width="2"/>' + txt(414, y + 3, word, 'font-size="9" fill="var(--i2)"'));
+          svgParts.push('<path d="M462 ' + y + ' H' + (kX(j) - 14) + ' Q' + kX(j) + ' ' + y + ', ' + kX(j) + ' ' + (y + 14) + ' V' + (qY(0) - 20) + '" fill="none" stroke="' + C.k + '" stroke-opacity=".55" stroke-width="1.5"/>');
+        });
+        // Query list (left) → rows
+        svgParts.push(txt(380, 138, 'Query', 'text-anchor="middle" font-weight="700" font-size="10" fill="' + C.q + '"'));
+        svgParts.push('<rect x="' + (kX(0) - 22) + '" y="' + (qY(selected) - 20) + '" width="164" height="40" rx="6" fill="' + C.o + '" fill-opacity=".08"/>');
+        sentenceWords.forEach((word, i) => {
+          const y = qY(i), on = i === selected;
+          svgParts.push('<g data-select="' + i + '"><line x1="400" y1="' + y + '" x2="410" y2="' + y + '" stroke="' + C.q + '" stroke-width="2"/>' + txt(414, y + 3, word, 'font-size="9" font-weight="' + (on ? 700 : 400) + '" fill="' + (on ? C.q : 'var(--i2)') + '"') + '</g>');
+          svgParts.push('<line x1="462" y1="' + y + '" x2="' + (kX(0) - 20) + '" y2="' + y + '" stroke="' + C.q + '" stroke-opacity="' + (on ? .8 : .3) + '" stroke-width="1.5"/>');
+        });
+        // Value list (bottom) → Out, thickness = selected row weight
+        svgParts.push(txt(380, 290, 'Value', 'text-anchor="middle" font-weight="700" font-size="10" fill="' + C.v + '"'));
+        sentenceWords.forEach((word, j) => {
+          const y = vyL(j), w = weights[j];
+          svgParts.push('<line x1="400" y1="' + y + '" x2="410" y2="' + y + '" stroke="' + C.v + '" stroke-width="2"/>' + txt(414, y + 3, word, 'font-size="9" fill="var(--i2)"'));
+          svgParts.push(ribbon(462, y, OUT[0] - 18, OUT[1], C.v, .12 + w * .5, 1.5 + w * 9));
+        });
+        // weight-dot grid; selected row fans into Out
+        allRows.forEach((row, i) => row.forEach((w, j) => {
+          const x = kX(j), y = qY(i), r = 5 + w * 13, on = i === selected;
+          if (on) svgParts.push(ribbon(x + r, y, OUT[0] - 18, OUT[1], C.o, .25 + w * .7, 1 + w * 6));
+          svgParts.push('<circle cx="' + x + '" cy="' + y + '" r="' + r.toFixed(1) + '" fill="' + C.o + '" fill-opacity="' + (.12 + w * .88).toFixed(2) + '" class="att-dot" data-select="' + i + '"><title>Q(' + sentenceWords[i] + ') · K(' + sentenceWords[j] + ') = ' + allScores[i][j].toFixed(3) + '  →  softmax weight ' + w.toFixed(3) + '</title></circle>');
+          if (on) svgParts.push(txt(x, y + r + 9, w.toFixed(2), 'text-anchor="middle" font-size="8" font-weight="700" fill="' + C.o + '"'));
+        }));
+        // Out node → context rows
+        svgParts.push('<circle cx="' + OUT[0] + '" cy="' + OUT[1] + '" r="18" fill="' + C.o + '"/>' + txt(OUT[0], OUT[1] + 4, 'Out', 'text-anchor="middle" font-size="10" font-weight="700" fill="#fff"') + txt(OUT[0], OUT[1] + 32, 'Σ w × V', 'text-anchor="middle" class="network-muted"'));
+        allContexts.forEach((ctx, i) => {
+          const y = tokenY(i), on = i === selected;
+          svgParts.push(ribbon(OUT[0] + 18, OUT[1], 826, y, C.o, on ? .7 : .1, on ? 3 : 1));
+          svgParts.push('<g data-select="' + i + '">' + txt(830, y + 3, sentenceWords[i], 'font-size="9" font-weight="' + (on ? 700 : 400) + '" fill="' + (on ? C.o : 'var(--i3)') + '"') + '<rect x="884" y="' + (y - 7) + '" width="90" height="14" rx="2" fill="' + C.o + '" fill-opacity="' + (on ? .32 : .08) + '"/>' + txt(929, y + 3, fmt(ctx), 'text-anchor="middle" font-size="8.5" font-weight="' + (on ? 700 : 400) + '" fill="' + (on ? 'var(--i)' : 'var(--i3)') + '"') + '</g>');
+        });
+        svgParts.push(txt(500, 358, 'dot size = attention weight · hover a dot for Q·K and its weight · click a token, query row, or context row to change the query', 'text-anchor="middle" class="network-muted"'));
+        network.innerHTML = svgParts.join('');
         sentenceTokens.querySelectorAll('button').forEach((b, i) => b.classList.toggle('selected', i === selected));
         document.getElementById('sentenceQ').textContent = 'Q(' + sentenceWords[selected] + ') = [' + q.map(n => n.toFixed(2)).join(', ') + ']';
-        document.getElementById('sentenceTable').innerHTML = '<div><b>token</b><b>K</b><b>V</b></div>' + sentenceWords.map((word, i) => '<div class="' + (i === selected ? 'selected-row' : '') + '"><span>' + word + (i === selected ? ' · Q' : '') + '</span><span>[' + keys[i].map(n => n.toFixed(2)).join(', ') + ']</span><span>[' + values[i].map(n => n.toFixed(2)).join(', ') + ']</span></div>').join('');
+        document.getElementById('sentenceTable').innerHTML = '<div><b>token</b><b>K</b><b>V</b><b>w</b></div>' + sentenceWords.map((word, i) => '<div class="' + (i === selected ? 'selected-row' : '') + '"><span>' + word + (i === selected ? ' · Q' : '') + '</span><span>[' + keys[i].map(n => n.toFixed(2)).join(', ') + ']</span><span>[' + values[i].map(n => n.toFixed(2)).join(', ') + ']</span><b>' + weights[i].toFixed(2) + '</b></div>').join('');
+        document.getElementById('attentionMatrix').innerHTML = '<span class="matrix-label"></span>' + sentenceWords.map(word => '<span class="matrix-label">' + word + '</span>').join('') + allRows.map((row, r) => '<span class="matrix-label">' + sentenceWords[r] + '</span>' + row.map(weight => '<span class="matrix-cell ' + (r === selected ? 'selected-row' : '') + '" style="background:rgba(14,124,107,' + (.1 + weight * .9) + ')">' + weight.toFixed(2) + '</span>').join('')).join('');
         document.getElementById('sentenceFormula').textContent = 'scores = Q · Kᵀ\nweights = softmax(scores)';
         document.getElementById('sentenceScores').innerHTML = scores.map((score, i) => '<div><span>Q · K(' + sentenceWords[i] + ')</span><b>' + score.toFixed(3) + '</b></div>').join('');
         document.getElementById('sentenceBars').innerHTML = weights.map((w, i) => '<span style="height:' + Math.max(4, w * 90) + 'px"><b>' + sentenceWords[i] + ' ' + w.toFixed(2) + '</b></span>').join('');
         document.getElementById('sentenceContext').textContent = '[' + context.map(n => n.toFixed(3)).join(', ') + ']';
+        document.getElementById('sentenceContrib').textContent = values.map((val, i) => 'w(' + sentenceWords[i] + ') × V = [' + val.map(n => (weights[i] * n).toFixed(3)).join(', ') + ']').join('\n');
         document.getElementById('sentenceExplain').textContent = '“' + sentenceWords[selected] + '” compares with every token, then gathers a weighted context.';
-        document.getElementById('result').textContent = sentenceWords[selected];
-        document.getElementById('sub').textContent = 'selected query token';
-        document.getElementById('out').textContent = selected;
+        document.getElementById('result').textContent = '[' + context.map(n => n.toFixed(2)).join(', ') + ']';
+        document.getElementById('sub').textContent = 'context from “' + sentenceWords[selected] + '”';
+        document.getElementById('out').textContent = sentenceWords[selected];
         document.getElementById('metric').textContent = Math.max(...weights).toFixed(3);
         document.getElementById('secondary').textContent = context[0].toFixed(3);
         document.getElementById('s1').textContent = 'Selected token = “' + sentenceWords[selected] + '”.';
@@ -583,6 +682,7 @@
         document.getElementById('trace').textContent = [action, 'Query token: ' + sentenceWords[selected], 'Weights: [' + weights.map(w => w.toFixed(3)).join(', ') + ']', 'Context: [' + context.map(n => n.toFixed(3)).join(', ') + ']'].join('\n');
       }
       sentenceTokens.querySelectorAll('button').forEach((button) => button.addEventListener('click', () => { document.getElementById('control').value = (+button.dataset.index + .5) * 25; renderSentence('Clicked “' + button.textContent + '”'); }));
+      document.getElementById('attentionNetwork').addEventListener('click', (e) => { const t = e.target.closest('[data-select]'); if (!t) return; document.getElementById('control').value = (+t.dataset.select + .5) * 25; renderSentence('Selected “' + sentenceWords[+t.dataset.select] + '”'); });
       document.getElementById('control').oninput = () => renderSentence();
       document.getElementById('try').onclick = () => { document.getElementById('control').value = 62; renderSentence('Loaded example'); };
       document.getElementById('reset').onclick = () => { document.getElementById('control').value = 12; renderSentence('Reset'); };

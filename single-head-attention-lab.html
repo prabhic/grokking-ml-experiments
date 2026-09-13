@@ -173,6 +173,12 @@
       .score-list div { display: flex; justify-content: space-between; border-bottom: 1px dotted var(--r); padding: 3px 0; }
       .contribution { margin-top: 10px; font: 11px/1.6 monospace; color: var(--i2); }
       .output-vector { font: 600 21px monospace; color: var(--t); padding: 16px 0; }
+      .network-wrap { margin-bottom: 14px; border: 1px solid var(--r); background: #fbfcfc; padding: 8px; overflow-x: auto; }
+      .network-wrap svg { display: block; width: 100%; min-width: 900px; height: auto; }
+      .network-wrap svg text { font-family: monospace; }
+      .network-label { font: 600 11px monospace; fill: var(--i2); }
+      .network-muted { font: 10px monospace; fill: var(--i3); }
+      .att-dot:hover { stroke: var(--g); stroke-width: 3; }
       @media (max-width: 760px) { .attention-flow { grid-template-columns: 1fr; } }
       .bars {
         display: flex;
@@ -351,6 +357,7 @@
             ><span>one mechanism · one visible result</span>
           </div>
           <div class="visual">
+            <div class="network-wrap"><svg id="attentionNetwork" viewBox="0 0 1000 320" role="img" aria-label="Single-head attention flow diagram"></svg></div>
             <div class="attention-flow">
               <div class="flow-box">
                 <h3>Input · Q, K, V</h3>
@@ -362,7 +369,7 @@
                 <small class="note">K decides the weight; V is the information that gets mixed.</small>
               </div>
               <div class="flow-box">
-                <h3>Transform · focus</h3>
+                <h3>Attend · scores → softmax</h3>
                 <div class="formula" id="formula"></div>
                 <div class="score-list" id="scoreList"></div>
                 <div class="attention-bars" id="bars"></div>
@@ -377,10 +384,10 @@
             </div>
           </div>
           <div class="stages">
-            <div class="stage"><b>1 · input</b><span id="s1"></span></div>
-            <div class="stage"><b>2 · transform</b><span id="s2"></span></div>
-            <div class="stage"><b>3 · compare</b><span id="s3"></span></div>
-            <div class="stage"><b>4 · output</b><span id="s4"></span></div>
+            <div class="stage"><b>1 · Q, K, V</b><span id="s1"></span></div>
+            <div class="stage"><b>2 · scores = Q · Kᵀ</b><span id="s2"></span></div>
+            <div class="stage"><b>3 · weights = softmax</b><span id="s3"></span></div>
+            <div class="stage"><b>4 · output = Σ w × V</b><span id="s4"></span></div>
           </div>
         </section>
         <aside>
@@ -480,6 +487,56 @@
         const z = e.reduce((s, n) => s + n, 0);
         const weights = e.map((n) => n / z);
         const mixed = values.reduce((out, val, i) => [out[0] + weights[i] * val[0], out[1] + weights[i] * val[1]], [0, 0]);
+        // Transformer-Explainer style flow: Q and K/V stripes → attention box
+        // (Key list, one Query row, weight dots, Value list) → Out → output.
+        const C = { q: '#2e63d6', k: '#c8324f', v: '#178a5a', o: '#6a4fd8' };
+        const kX = j => 560 + j * 44, QY = 160, kyL = j => 76 + j * 13, vyL = j => 228 + j * 13, rowY = j => 150 + j * 52;
+        const OUT = [775, QY];
+        const fmt = vec => vec.map(n => n.toFixed(2)).join('  ');
+        const txt = (x, y, t, extra) => '<text x="' + x + '" y="' + y + '" ' + (extra || '') + '>' + t + '</text>';
+        const ribbon = (x1, y1, x2, y2, color, op, w) => '<path d="M' + x1 + ' ' + y1 + ' C' + (x1 + 80) + ' ' + y1 + ', ' + (x2 - 80) + ' ' + y2 + ', ' + x2 + ' ' + y2 + '" fill="none" stroke="' + color + '" stroke-opacity="' + op.toFixed(2) + '" stroke-width="' + w.toFixed(2) + '" stroke-linecap="round"/>';
+        const stripe = (x, y, letter, color, vec, on) => txt(x - 4, y + 9, letter, 'text-anchor="end" font-weight="700" font-size="9" fill="' + color + '"') + '<rect x="' + x + '" y="' + y + '" width="74" height="12" rx="2" fill="' + color + '" fill-opacity="' + (on ? .32 : .14) + '"/>' + txt(x + 37, y + 9, fmt(vec), 'text-anchor="middle" font-size="8.5" fill="var(--i)"');
+        const P = ['<rect width="1000" height="320" fill="transparent"/>'];
+        [['Q', 'query (editable)', C.q], ['K', 'key', C.k], ['V', 'value', C.v], ['●', 'attention weight', C.o]].forEach(([l, t, c], i) => {
+          const x = 20 + i * 150;
+          P.push('<rect x="' + x + '" y="10" width="10" height="10" rx="2" fill="' + c + '"/>' + txt(x + 15, 19, l + ' · ' + t, 'class="network-muted"'));
+        });
+        P.push(txt(20, 46, 'INPUT · Q, K, V', 'class="network-label"'), txt(340, 46, 'ATTENTION · softmax(Q · Kᵀ)', 'class="network-label"'), txt(826, 46, 'OUTPUT · Σ w × V', 'class="network-label"'));
+        P.push('<rect x="330" y="54" width="400" height="246" rx="4" fill="#fff" stroke="var(--r)"/>');
+        P.push(ribbon(214, 90, 400, QY, C.q, .55, 7));
+        keys.forEach((_, j) => { P.push(ribbon(214, rowY(j) - 8, 400, kyL(j), C.k, .16, 7), ribbon(214, rowY(j) + 8, 400, vyL(j), C.v, .16, 7)); });
+        P.push('<rect x="20" y="77" width="84" height="26" rx="5" fill="#d6eae6" stroke="var(--t)" stroke-width="2"/>' + txt(62, 94, 'query', 'text-anchor="middle" font-size="12" font-weight="700" fill="var(--i)"') + stripe(140, 84, 'Q', C.q, q, true));
+        keys.forEach((k, j) => {
+          const y = rowY(j);
+          P.push('<rect x="20" y="' + (y - 13) + '" width="84" height="26" rx="5" fill="#fff" stroke="var(--r)" stroke-width="1.5"/>' + txt(62, y + 4, 'token ' + (j + 1), 'text-anchor="middle" font-size="12" font-weight="700" fill="var(--i)"'));
+          P.push(stripe(140, y - 14, 'K' + (j + 1), C.k, k, false), stripe(140, y + 2, 'V' + (j + 1), C.v, values[j], false));
+        });
+        P.push(txt(380, 66, 'Key', 'text-anchor="middle" font-weight="700" font-size="10" fill="' + C.k + '"'));
+        keys.forEach((_, j) => {
+          const y = kyL(j);
+          P.push('<line x1="400" y1="' + y + '" x2="410" y2="' + y + '" stroke="' + C.k + '" stroke-width="2"/>' + txt(414, y + 3, 'K' + (j + 1), 'font-size="9" fill="var(--i2)"'));
+          P.push('<path d="M462 ' + y + ' H' + (kX(j) - 14) + ' Q' + kX(j) + ' ' + y + ', ' + kX(j) + ' ' + (y + 14) + ' V' + (QY - 24) + '" fill="none" stroke="' + C.k + '" stroke-opacity=".55" stroke-width="1.5"/>');
+        });
+        P.push(txt(380, 148, 'Query', 'text-anchor="middle" font-weight="700" font-size="10" fill="' + C.q + '"'));
+        P.push('<rect x="' + (kX(0) - 24) + '" y="' + (QY - 22) + '" width="' + (44 * 3 + 4) + '" height="44" rx="6" fill="' + C.o + '" fill-opacity=".08"/>');
+        P.push('<line x1="400" y1="' + QY + '" x2="410" y2="' + QY + '" stroke="' + C.q + '" stroke-width="2"/>' + txt(414, QY + 3, 'Q', 'font-size="9" font-weight="700" fill="' + C.q + '"') + '<line x1="462" y1="' + QY + '" x2="' + (kX(0) - 22) + '" y2="' + QY + '" stroke="' + C.q + '" stroke-opacity=".8" stroke-width="1.5"/>');
+        P.push(txt(380, 218, 'Value', 'text-anchor="middle" font-weight="700" font-size="10" fill="' + C.v + '"'));
+        keys.forEach((_, j) => {
+          const y = vyL(j), w = weights[j];
+          P.push('<line x1="400" y1="' + y + '" x2="410" y2="' + y + '" stroke="' + C.v + '" stroke-width="2"/>' + txt(414, y + 3, 'V' + (j + 1), 'font-size="9" fill="var(--i2)"'));
+          P.push(ribbon(462, y, OUT[0] - 18, OUT[1], C.v, .12 + w * .5, 1.5 + w * 9));
+        });
+        weights.forEach((w, j) => {
+          const x = kX(j), r = 5 + w * 14;
+          P.push(ribbon(x + r, QY, OUT[0] - 18, OUT[1], C.o, .25 + w * .7, 1 + w * 6));
+          P.push('<circle cx="' + x + '" cy="' + QY + '" r="' + r.toFixed(1) + '" fill="' + C.o + '" fill-opacity="' + (.12 + w * .88).toFixed(2) + '" class="att-dot"><title>Q · K' + (j + 1) + ' = ' + scores[j].toFixed(3) + '  →  softmax weight ' + w.toFixed(3) + '</title></circle>');
+          P.push(txt(x, QY + r + 10, w.toFixed(2), 'text-anchor="middle" font-size="8" font-weight="700" fill="' + C.o + '"'));
+        });
+        P.push('<circle cx="' + OUT[0] + '" cy="' + OUT[1] + '" r="18" fill="' + C.o + '"/>' + txt(OUT[0], OUT[1] + 4, 'Out', 'text-anchor="middle" font-size="10" font-weight="700" fill="#fff"') + txt(OUT[0], OUT[1] + 32, 'Σ w × V', 'text-anchor="middle" class="network-muted"'));
+        P.push(ribbon(OUT[0] + 18, OUT[1], 826, QY, C.o, .7, 3));
+        P.push(txt(830, QY + 3, 'out', 'font-size="9" font-weight="700" fill="' + C.o + '"') + '<rect x="860" y="' + (QY - 7) + '" width="90" height="14" rx="2" fill="' + C.o + '" fill-opacity=".32"/>' + txt(905, QY + 3, fmt(mixed), 'text-anchor="middle" font-size="8.5" font-weight="700" fill="var(--i)"'));
+        P.push(txt(500, 316, 'dot size = attention weight · hover a dot for Q·K and its weight · edit Q below or drag the Query x slider to move the query', 'text-anchor="middle" class="network-muted"'));
+        $("attentionNetwork").innerHTML = P.join('');
         const a = mixed[0], b = mixed[1];
         $("result").textContent = "[" + mixed.map((n) => n.toFixed(2)).join(", ") + "]";
         $("metric").textContent = a.toFixed(3);
@@ -503,7 +560,7 @@
           "Q: [" + q.join(", ") + "]",
           "Scores: [" + scores.map((n) => n.toFixed(2)).join(", ") + "]",
           "Output: [" + mixed.map((n) => n.toFixed(2)).join(", ") + "]",
-        ].join("\\n");
+        ].join("\n");
       }
       $("control").oninput = (e) => {
         v = +e.target.value;
