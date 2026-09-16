@@ -160,6 +160,14 @@
         padding: 18px;
         min-height: 190px;
       }
+      .block-name { margin: 0 0 6px; font: 600 10px/1 monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--i3); }
+      .block-name + .network-wrap { margin-bottom: 18px; }
+      .network-wrap { margin-bottom: 14px; border: 1px solid var(--r); background: #fbfcfc; padding: 8px; overflow-x: auto; }
+      .network-wrap svg { display: block; width: 100%; min-width: 720px; height: auto; }
+      .network-wrap svg text { font-family: monospace; }
+      .network-label { font: 600 11px monospace; fill: var(--i2); }
+      .network-muted { font: 10px monospace; fill: var(--i3); }
+      .node:hover { stroke: var(--g); stroke-width: 3; }
       .bars {
         display: flex;
         align-items: end;
@@ -312,7 +320,7 @@
       </div>
       <div class="tools">
         <div class="group">
-          <span class="label">Control</span
+          <span class="label">Sublayer strength</span
           ><input
             id="control"
             type="range"
@@ -339,15 +347,18 @@
             ><span>one mechanism · one visible result</span>
           </div>
           <div class="visual">
+            <p class="block-name">Block 1 · Rich visual</p>
+            <div class="network-wrap"><svg id="residualNetwork" viewBox="0 0 1000 300" role="img" aria-label="Residual connection flow diagram"></svg></div>
+            <p class="block-name">Block 2 · Equations and numbers playground</p>
             <div class="formula" id="formula"></div>
             <div class="bars" id="bars"></div>
             <p class="note" id="explain"></p>
           </div>
           <div class="stages">
-            <div class="stage"><b>1 · input</b><span id="s1"></span></div>
-            <div class="stage"><b>2 · transform</b><span id="s2"></span></div>
-            <div class="stage"><b>3 · compare</b><span id="s3"></span></div>
-            <div class="stage"><b>4 · output</b><span id="s4"></span></div>
+            <div class="stage"><b>1 · input x</b><span id="s1"></span></div>
+            <div class="stage"><b>2 · F(x) = s · tanh(W x)</b><span id="s2"></span></div>
+            <div class="stage"><b>3 · out = x + F(x)</b><span id="s3"></span></div>
+            <div class="stage"><b>4 · after 4 blocks</b><span id="s4"></span></div>
           </div>
         </section>
         <aside>
@@ -415,6 +426,15 @@
               <li>Reset and reproduce the change from the beginning.</li>
             </ol>
           </section>
+          <section class="note-block">
+            <h3>A short history</h3>
+            <p>
+              The skip connection became famous through He, Zhang, Ren, and Sun's ResNet (2015), which showed that letting each layer learn a residual <em>x + F(x)</em> instead of a full replacement made very deep networks trainable. Highway networks by Srivastava, Greff, and Schmidhuber (2015) proposed gated skips at the same time, and the idea echoes the constant error carousel inside the 1997 LSTM. The Transformer (2017) wraps every attention and feed-forward sublayer in one, which is why an LLM's hidden state is often called the residual stream.
+              <a href="https://arxiv.org/abs/1512.03385" target="_blank" rel="noopener">ResNet ↗</a>
+              <a href="https://arxiv.org/abs/1505.00387" target="_blank" rel="noopener">Highway networks ↗</a>
+              <a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Transformer paper ↗</a>
+            </p>
+          </section>
         </div>
         <p class="foot">
           <a href="index.html">← Playground explorer</a> ·
@@ -425,84 +445,84 @@
     <script>
       const $ = (id) => document.getElementById(id);
       let v = 50;
-      const kind = "mix";
+      // Toy: a 3-number token through 4 identical sublayers F(x) = s · tanh(W x).
+      // Top path keeps the skip (x + F(x)); bottom path drops it (F(x) only).
+      const X0 = [1.0, -0.5, 0.8];
+      const W = [[0.6, -0.4, 0.2], [0.3, 0.5, -0.6], [-0.2, 0.4, 0.5]];
+      const F = (x, s) => W.map((row) => s * Math.tanh(row.reduce((acc, w, i) => acc + w * x[i], 0)));
+      const add = (u, w) => u.map((n, i) => n + w[i]);
+      const norm = (u) => Math.sqrt(u.reduce((acc, n) => acc + n * n, 0));
+      const fmt = (u) => u.map((n) => n.toFixed(2)).join('  ');
+      const fmtList = (u) => '[' + u.map((n) => n.toFixed(2)).join(', ') + ']';
       function render(action = "Moved control") {
-        let x = v / 100,
-          a = 0,
-          b = 0,
-          label = "value";
-        if (kind === "temperature") {
-          a = (1 - x) * 0.9;
-          b = x * 1.4;
-          label = "temperature";
-        } else if (kind === "probability") {
-          a = Math.max(0.001, x);
-          b = -Math.log(a);
-          label = "loss";
-        } else if (kind === "learning") {
-          a = (x - 0.6) * 2;
-          b = Math.abs(a);
-          label = "weight";
-        } else if (kind === "model") {
-          a = Math.round(2 + x * 10);
-          b = a * a * 64;
-          label = "parameters";
-        } else if (kind === "window") {
-          a = Math.round(1 + x * 15);
-          b = Math.max(0, 16 - a);
-          label = "tokens used";
-        } else if (kind === "rank") {
-          a = Math.round(1 + x * 4);
-          b = 1 / (a + 0.5);
-          label = "rank";
-        } else if (kind === "evidence") {
-          a = x;
-          b = Math.max(0, 0.9 - a * 0.8);
-          label = "confidence";
-        } else {
-          a = x;
-          b = Math.sin(x * Math.PI * 2);
-          label = "score";
+        const s = 0.1 + (v / 100) * 1.9;
+        const skip = [X0], plain = [X0], deltas = [];
+        for (let l = 0; l < 4; l++) {
+          const f = F(skip[l], s);
+          deltas.push(f);
+          skip.push(add(skip[l], f));
+          plain.push(F(plain[l], s));
         }
-        $("result").textContent = typeof a === "number" ? a.toFixed(3) : a;
+        const a = norm(skip[4]), b = norm(plain[4]), label = "‖x‖ after 4 blocks · with skip";
+        {
+          const C = { x: '#2e63d6', f: '#c8324f', add: '#6a4fd8', no: '#7b90a2' };
+          const YA = 122, YB = 232, txt = (x, y, t, extra) => '<text x="' + x + '" y="' + y + '" ' + (extra || '') + '>' + t + '</text>';
+          const wv = (n) => (1.5 + Math.min(6, n * 1.5)).toFixed(1);
+          const fmtS = (u) => u.map((n) => n.toFixed(2)).join(' ');
+          const stripe = (x, y, vec, color, on) => '<rect x="' + x + '" y="' + (y - 7) + '" width="76" height="14" rx="2" fill="' + color + '" fill-opacity="' + (on ? .3 : .14) + '" class="node"><title>' + fmtList(vec) + '  ‖·‖ = ' + norm(vec).toFixed(2) + '</title></rect>' + txt(x + 38, y + 4, fmtS(vec), 'text-anchor="middle" font-size="7.5" fill="var(--i)"') + txt(x + 38, y + 19, '‖' + norm(vec).toFixed(2) + '‖', 'text-anchor="middle" font-size="8" fill="' + color + '"');
+          const line = (x1, x2, y, color, n, dash) => '<line x1="' + x1 + '" y1="' + y + '" x2="' + x2 + '" y2="' + y + '" stroke="' + color + '" stroke-opacity=".7" stroke-width="' + wv(n) + '" stroke-linecap="round"' + (dash ? ' stroke-dasharray="5 4"' : '') + '/>';
+          const fbox = (x, y, vec) => '<rect x="' + x + '" y="' + (y - 16) + '" width="36" height="32" rx="5" fill="' + C.f + '" fill-opacity=".12" stroke="' + C.f + '" stroke-width="1.5" class="node"><title>F = ' + fmtList(vec) + '  ‖F‖ = ' + norm(vec).toFixed(2) + '</title></rect>' + txt(x + 18, y + 4, 'F', 'text-anchor="middle" font-size="12" font-weight="700" fill="' + C.f + '"');
+          const P = ['<rect width="1000" height="300" fill="transparent"/>'];
+          [['x', 'residual stream (kept)', C.x], ['F', 'sublayer output s·tanh(Wx)', C.f], ['+', 'skip add', C.add], ['—', 'same sublayers, skip removed', C.no]].forEach(([l, t, c], i) => {
+            const xx = 20 + i * 230;
+            P.push('<rect x="' + xx + '" y="10" width="10" height="10" rx="2" fill="' + c + '"/>' + txt(xx + 15, 19, l + ' · ' + t, 'class="network-muted"'));
+          });
+          P.push(txt(20, 46, 'INPUT · x₀', 'class="network-label"'), txt(160, 46, '4 BLOCKS · F(x) = s · tanh(W x) · s = ' + s.toFixed(2), 'class="network-label"'));
+          P.push('<rect x="150" y="54" width="810" height="230" rx="4" fill="#fff" stroke="var(--r)"/>');
+          P.push(txt(160, YA - 42, 'WITH SKIP · xₗ₊₁ = xₗ + F(xₗ)', 'font-size="9" font-weight="700" fill="' + C.add + '"'), txt(160, YB - 42, 'WITHOUT SKIP · xₗ₊₁ = F(xₗ)', 'font-size="9" font-weight="700" fill="' + C.no + '"'));
+          P.push(stripe(20, YA, X0, C.x, true), stripe(20, YB, X0, C.x, true));
+          for (let l = 0; l < 4; l++) {
+            const ox = 170 + l * 190, fx = ox + 16, px = ox + 78, sx = ox + 106, inX = l ? ox - 8 : 96;
+            const inA = skip[l], fA = deltas[l], outA = skip[l + 1], inB = plain[l], outB = plain[l + 1];
+            P.push(line(inX, fx, YA, C.x, norm(inA)));
+            P.push('<path d="M' + (ox + 6) + ' ' + YA + ' C' + (ox + 6) + ' ' + (YA - 32) + ', ' + px + ' ' + (YA - 32) + ', ' + px + ' ' + (YA - 11) + '" fill="none" stroke="' + C.add + '" stroke-opacity=".6" stroke-width="2" stroke-dasharray="4 3"/>');
+            P.push(fbox(fx, YA, fA), line(fx + 36, px - 11, YA, C.f, norm(fA)));
+            P.push('<circle cx="' + px + '" cy="' + YA + '" r="11" fill="#fff" stroke="' + C.add + '" stroke-width="2"/>' + txt(px, YA + 4, '+', 'text-anchor="middle" font-size="13" font-weight="700" fill="' + C.add + '"'));
+            P.push(line(px + 11, sx, YA, C.x, norm(outA)), stripe(sx, YA, outA, C.x, l === 3), txt(sx + 38, YA - 12, 'x' + '₁₂₃₄'[l] + (l === 3 ? ' · output' : ''), 'text-anchor="middle" font-size="9" font-weight="700" fill="' + C.x + '"'));
+            P.push(line(inX, fx, YB, C.no, norm(inB), true), fbox(fx, YB, outB), line(fx + 36, sx, YB, C.no, norm(outB), true), stripe(sx, YB, outB, C.no, l === 3), txt(sx + 38, YB - 12, 'x' + '₁₂₃₄'[l] + (l === 3 ? ' · output' : ''), 'text-anchor="middle" font-size="9" font-weight="700" fill="' + C.no + '"'));
+          }
+          P.push(txt(500, 296, 'line width = ‖vector‖ · dashed arcs are the skips · with a skip each block only adds a delta, so x₀ survives; without it, F replaces x every block', 'text-anchor="middle" class="network-muted"'));
+          $("residualNetwork").innerHTML = P.join('');
+        }
+        $("result").textContent = a.toFixed(3);
         $("metric").textContent = a.toFixed(3);
         $("secondary").textContent = b.toFixed(3);
         $("out").textContent = v;
         $("sub").textContent = label;
         $("formula").textContent =
-          kind === "temperature"
-            ? "probability ∝ exp(score / temperature)"
-            : kind === "probability"
-              ? "loss = −log(correct probability)"
-              : kind === "learning"
-                ? "new weight = old weight − learning rate × gradient"
-                : kind === "model"
-                  ? "parameters ≈ layers × width²"
-                  : "calculation: input → output";
-        const heights = [
-          Math.abs(a),
-          Math.abs(b),
-          Math.abs(a - b),
-          Math.abs(a + b),
-        ].map((z) => Math.min(100, Math.max(3, z * 70)));
+          "out = x + F(x)          F(x) = s · tanh(W x)          s = " + s.toFixed(2) + "\n" +
+          "x₀    = " + fmtList(X0) + "   ‖x₀‖ = " + norm(X0).toFixed(2) + "\n" +
+          "F(x₀) = " + fmtList(deltas[0]) + "   ‖F‖ = " + norm(deltas[0]).toFixed(2) + "\n" +
+          "x₁    = " + fmtList(skip[1]) + "   with skip\n" +
+          "x₁    = " + fmtList(plain[1]) + "   without skip";
+        const heights = [X0, deltas[0], skip[1], plain[1]].map((u) => Math.min(100, Math.max(3, norm(u) * 40)));
         $("bars").innerHTML = heights
-          .map((h, i) => '<i style="height:' + h + 'px"></i>')
+          .map((h, i) => '<i style="height:' + h + 'px" title="' + ['‖x₀‖', '‖F(x₀)‖', '‖x₁‖ with skip', '‖x₁‖ without skip'][i] + '"></i>')
           .join("");
         $("explain").textContent =
-          "The control changes " +
-          label +
-          "; the resulting quantity is visible immediately.";
-        $("s1").textContent = "Control value = " + v + ".";
-        $("s2").textContent = "Apply the toy " + kind + " calculation.";
-        $("s3").textContent = "Inspect the intermediate quantities.";
-        $("s4").textContent = "Output = " + a.toFixed(3) + ".";
+          "Bars: ‖x₀‖, ‖F(x₀)‖, ‖x₁‖ with skip, ‖x₁‖ without skip. The skip keeps the original token and lets F add a correction; without it, F must reproduce everything itself.";
+        $("s1").textContent = "x₀ = " + fmtList(X0) + ", s = " + s.toFixed(2) + ".";
+        $("s2").textContent = "F(x₀) = " + fmtList(deltas[0]) + ".";
+        $("s3").textContent = fmtList(X0) + " + " + fmtList(deltas[0]) + " = " + fmtList(skip[1]) + ".";
+        $("s4").textContent = "‖x₄‖ = " + a.toFixed(2) + " with skip vs " + b.toFixed(2) + " without; gradient through the skip is 1 + ∂F/∂x, never zero.";
         $("insight").textContent =
-          "This is a small teaching model, not a production-scale implementation.";
+          "Real blocks add layer normalization so the residual stream does not grow without bound; this toy omits it to keep the addition visible.";
         $("trace").textContent = [
           action,
-          "Control: " + v,
-          "Primary: " + a.toFixed(3),
-          "Secondary: " + b.toFixed(3),
+          "Sublayer strength s: " + s.toFixed(2),
+          "x0: " + fmtList(X0),
+          "with skip:    " + skip.slice(1).map((u) => norm(u).toFixed(2)).join(" → "),
+          "without skip: " + plain.slice(1).map((u) => norm(u).toFixed(2)).join(" → "),
         ].join("\n");
       }
       $("control").oninput = (e) => {

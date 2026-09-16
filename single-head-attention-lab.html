@@ -173,6 +173,8 @@
       .score-list div { display: flex; justify-content: space-between; border-bottom: 1px dotted var(--r); padding: 3px 0; }
       .contribution { margin-top: 10px; font: 11px/1.6 monospace; color: var(--i2); }
       .output-vector { font: 600 21px monospace; color: var(--t); padding: 16px 0; }
+      .block-name { margin: 0 0 6px; font: 600 10px/1 monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--i3); }
+      .block-name + .network-wrap { margin-bottom: 18px; }
       .network-wrap { margin-bottom: 14px; border: 1px solid var(--r); background: #fbfcfc; padding: 8px; overflow-x: auto; }
       .network-wrap svg { display: block; width: 100%; min-width: 900px; height: auto; }
       .network-wrap svg text { font-family: monospace; }
@@ -357,7 +359,9 @@
             ><span>one mechanism · one visible result</span>
           </div>
           <div class="visual">
+            <p class="block-name">Block 1 · Rich visual</p>
             <div class="network-wrap"><svg id="attentionNetwork" viewBox="0 0 1000 320" role="img" aria-label="Single-head attention flow diagram"></svg></div>
+            <p class="block-name">Block 2 · Equations and numbers playground</p>
             <div class="attention-flow">
               <div class="flow-box">
                 <h3>Input · Q, K, V</h3>

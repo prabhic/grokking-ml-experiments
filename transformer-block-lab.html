@@ -160,6 +160,14 @@
         padding: 18px;
         min-height: 190px;
       }
+      .block-name { margin: 0 0 6px; font: 600 10px/1 monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--i3); }
+      .block-name + .network-wrap { margin-bottom: 18px; }
+      .network-wrap { margin-bottom: 14px; border: 1px solid var(--r); background: #fbfcfc; padding: 8px; overflow-x: auto; }
+      .network-wrap svg { display: block; width: 100%; min-width: 720px; height: auto; }
+      .network-wrap svg text { font-family: monospace; }
+      .network-label { font: 600 11px monospace; fill: var(--i2); }
+      .network-muted { font: 10px monospace; fill: var(--i3); }
+      .node:hover { stroke: var(--g); stroke-width: 3; }
       .bars {
         display: flex;
         align-items: end;
@@ -339,15 +347,18 @@
             ><span>one mechanism · one visible result</span>
           </div>
           <div class="visual">
+            <p class="block-name">Block 1 · Rich visual</p>
+            <div class="network-wrap"><svg id="blockNetwork" viewBox="0 0 1000 280" role="img" aria-label="Transformer block flow diagram"></svg></div>
+            <p class="block-name">Block 2 · Equations and numbers playground</p>
             <div class="formula" id="formula"></div>
             <div class="bars" id="bars"></div>
             <p class="note" id="explain"></p>
           </div>
           <div class="stages">
-            <div class="stage"><b>1 · input</b><span id="s1"></span></div>
-            <div class="stage"><b>2 · transform</b><span id="s2"></span></div>
-            <div class="stage"><b>3 · compare</b><span id="s3"></span></div>
-            <div class="stage"><b>4 · output</b><span id="s4"></span></div>
+            <div class="stage"><b>1 · input x</b><span id="s1"></span></div>
+            <div class="stage"><b>2 · attention</b><span id="s2"></span></div>
+            <div class="stage"><b>3 · h = x + attn</b><span id="s3"></span></div>
+            <div class="stage"><b>4 · out = h + FFN(h)</b><span id="s4"></span></div>
           </div>
         </section>
         <aside>
@@ -415,6 +426,15 @@
               <li>Reset and reproduce the change from the beginning.</li>
             </ol>
           </section>
+          <section class="note-block">
+            <h3>A short history</h3>
+            <p>
+              The block assembled here was introduced in Vaswani and colleagues' <em>Attention Is All You Need</em> (2017). Its two supporting ideas are older: residual (skip) connections come from He and colleagues' ResNet work (2015), and layer normalization from Ba, Kiros, and Hinton (2016). The original paper normalized after each residual add; most modern LLMs such as GPT-2 onward normalize before each sublayer (pre-norm). This toy keeps the residual arithmetic and omits the norm step.
+              <a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Transformer paper ↗</a>
+              <a href="https://arxiv.org/abs/1512.03385" target="_blank" rel="noopener">ResNet ↗</a>
+              <a href="https://arxiv.org/abs/1607.06450" target="_blank" rel="noopener">Layer norm ↗</a>
+            </p>
+          </section>
         </div>
         <p class="foot">
           <a href="index.html">← Playground explorer</a> ·
@@ -430,10 +450,40 @@
         let x = v / 100,
           token = 1,
           attended = 2 * x,
-          transformed = Math.tanh(attended),
           a = token + attended,
+          transformed = Math.tanh(a),
           b = a + transformed,
           label = "attention contribution";
+        // Top view: x → Attention → ⊕ → FFN → ⊕ → x′, skip arcs carry the residual.
+        {
+          const C = { x: '#2e63d6', at: '#c8324f', ff: '#178a5a', add: '#6a4fd8' };
+          const Y = 165, txt = (x, y, t, extra) => '<text x="' + x + '" y="' + y + '" ' + (extra || '') + '>' + t + '</text>';
+          const wv = n => (2 + Math.min(12, Math.abs(n) * 4)).toFixed(1);
+          const line = (x1, x2, color, n, op) => '<line x1="' + x1 + '" y1="' + Y + '" x2="' + x2 + '" y2="' + Y + '" stroke="' + color + '" stroke-opacity="' + (op || .75) + '" stroke-width="' + wv(n) + '" stroke-linecap="round"/>';
+          const arc = (x1, x2, color, n) => '<path d="M' + x1 + ' ' + Y + ' C' + x1 + ' 85, ' + x2 + ' 85, ' + x2 + ' ' + (Y - 14) + '" fill="none" stroke="' + color + '" stroke-opacity=".45" stroke-width="' + wv(n) + '" stroke-linecap="round" stroke-dasharray="6 4"/>';
+          const box = (x, w, label, sub, color) => '<rect x="' + x + '" y="' + (Y - 34) + '" width="' + w + '" height="68" rx="6" fill="' + color + '" fill-opacity=".1" stroke="' + color + '" stroke-width="1.5" class="node"><title>' + label + ': ' + sub + '</title></rect>' + txt(x + w / 2, Y - 4, label, 'text-anchor="middle" font-size="12" font-weight="700" fill="' + color + '"') + txt(x + w / 2, Y + 14, sub, 'text-anchor="middle" font-size="9" fill="var(--i2)"');
+          const plus = (x, n) => '<circle cx="' + x + '" cy="' + Y + '" r="15" fill="#fff" stroke="' + C.add + '" stroke-width="2" class="node"><title>residual add = ' + n.toFixed(2) + '</title></circle>' + txt(x, Y + 5, '+', 'text-anchor="middle" font-size="16" font-weight="700" fill="' + C.add + '"') + txt(x, Y + 34, n.toFixed(2), 'text-anchor="middle" font-size="10" font-weight="700" fill="' + C.add + '"');
+          const val = (x, n, color) => txt(x, Y - 22, n.toFixed(2), 'text-anchor="middle" font-size="10" font-weight="700" fill="' + color + '"');
+          const P = ['<rect width="1000" height="280" fill="transparent"/>'];
+          [['x', 'token in / residual stream', C.x], ['attn', 'attention contribution', C.at], ['+', 'residual add (keeps old x)', C.add], ['FFN', 'feed-forward tanh', C.ff]].forEach(([l, t, c], i) => {
+            const xx = 20 + i * 230;
+            P.push('<rect x="' + xx + '" y="10" width="10" height="10" rx="2" fill="' + c + '"/>' + txt(xx + 15, 19, l + ' · ' + t, 'class="network-muted"'));
+          });
+          P.push(txt(20, 46, 'INPUT · x', 'class="network-label"'), txt(230, 46, 'TRANSFORMER BLOCK · attention → + → FFN → +', 'class="network-label"'), txt(850, 46, 'OUTPUT · x′', 'class="network-label"'));
+          P.push('<rect x="220" y="54" width="560" height="206" rx="4" fill="#fff" stroke="var(--r)"/>');
+          // stream + skips
+          P.push(line(110, 250, C.x, token), arc(150, 400, C.x, token), line(350, 385, C.at, attended), line(415, 540, C.add, a), arc(470, 700, C.add, a), line(640, 685, C.ff, transformed), line(715, 850, C.add, b));
+          P.push(txt(275, 78, 'skip: carries x = ' + token.toFixed(2), 'text-anchor="middle" font-size="9" fill="' + C.x + '"'), txt(585, 78, 'skip: carries h = ' + a.toFixed(2), 'text-anchor="middle" font-size="9" fill="' + C.add + '"'));
+          // nodes
+          P.push('<rect x="30" y="' + (Y - 20) + '" width="80" height="40" rx="5" fill="' + C.x + '" fill-opacity=".14" stroke="' + C.x + '" stroke-width="1.5"/>' + txt(70, Y - 2, 'x', 'text-anchor="middle" font-size="12" font-weight="700" fill="' + C.x + '"') + txt(70, Y + 13, token.toFixed(2), 'text-anchor="middle" font-size="10" fill="var(--i)"'));
+          P.push(box(250, 100, 'Attention', '2 × ' + x.toFixed(2) + ' = ' + attended.toFixed(2), C.at));
+          P.push(val(370, attended, C.at), plus(400, a), val(445, a, C.add));
+          P.push(box(540, 100, 'FFN', 'tanh(' + a.toFixed(2) + ') = ' + transformed.toFixed(2), C.ff));
+          P.push(val(662, transformed, C.ff), plus(700, b), val(790, b, C.add));
+          P.push('<rect x="850" y="' + (Y - 20) + '" width="110" height="40" rx="5" fill="' + C.add + '" fill-opacity=".14" stroke="' + C.add + '" stroke-width="2"/>' + txt(905, Y - 4, 'x′ → next block', 'text-anchor="middle" font-size="10" font-weight="700" fill="' + C.add + '"') + txt(905, Y + 13, b.toFixed(2), 'text-anchor="middle" font-size="10" font-weight="700" fill="var(--i)"'));
+          P.push(txt(500, 276, 'line width = magnitude of the value flowing · dashed arcs are the residual skips · drag Attention mix to change how much attention adds', 'text-anchor="middle" class="network-muted"'));
+          $("blockNetwork").innerHTML = P.join('');
+        }
         $("result").textContent = typeof a === "number" ? a.toFixed(3) : a;
         $("metric").textContent = a.toFixed(3);
         $("secondary").textContent = b.toFixed(3);
@@ -449,22 +499,17 @@
                 : kind === "model"
                   ? "parameters ≈ layers × width²"
                   : kind === "toggle"
-                    ? "attention → residual → feed-forward → residual"
+                    ? "h = x + attention(x)\nout = h + FFN(h)      FFN = tanh\nx = " + token.toFixed(2) + ", attention = " + attended.toFixed(2) + ", h = " + a.toFixed(2) + ", FFN(h) = " + transformed.toFixed(2) + ", out = " + b.toFixed(2)
                     : "calculation: input → output";
-        const heights = [
-          Math.abs(a),
-          Math.abs(b),
-          Math.abs(a - b),
-          Math.abs(a + b),
-        ].map((z) => Math.min(100, Math.max(3, z * 70)));
+        const heights = [token, attended, a, b].map((z) => Math.min(100, Math.max(3, z * 25)));
         $("bars").innerHTML = heights
           .map((h, i) => '<i style="height:' + h + 'px"></i>')
           .join("");
         $("explain").textContent = "A transformer block is a sequence, not one mysterious operation: attention changes the token, a residual keeps the old token, then the feed-forward network transforms it again.";
         $("s1").textContent = "Input token x = " + token.toFixed(2) + ".";
-        $("s2").textContent = "Attention contribution = " + attended.toFixed(2) + ".";
-        $("s3").textContent = "Residual: x + attention = " + a.toFixed(2) + ".";
-        $("s4").textContent = "FFN + second residual = " + b.toFixed(2) + ".";
+        $("s2").textContent = "attention(x) = 2 × mix = " + attended.toFixed(2) + ".";
+        $("s3").textContent = "h = " + token.toFixed(2) + " + " + attended.toFixed(2) + " = " + a.toFixed(2) + ".";
+        $("s4").textContent = "out = " + a.toFixed(2) + " + tanh(" + a.toFixed(2) + ") = " + b.toFixed(2) + ".";
         $("insight").textContent =
           "Residual connections let each sublayer add information without erasing the representation it received.";
         $("trace").textContent = [

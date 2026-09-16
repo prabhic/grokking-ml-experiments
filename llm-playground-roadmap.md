@@ -18,6 +18,7 @@ Build small playgrounds that each expose one hidden mechanism and let you manipu
 | 11 | [Multi-Head Attention Playground](multi-head-attention-lab.html) | Several attention heads | Different heads focusing on different relationships | Explains why multiple heads exist |
 | 12 | [Residual Connection Playground](residual-connection-lab.html) | Original vector + transformation | `x + f(x)` | Shows how information survives many layers |
 | 13 | [Layer Normalization Playground](layer-normalization-lab.html) | Vector values before/after normalization | Mean, variance, scaling | Explains model stability without making it feel magical |
+| 13A | [Activation Function Playground](activation-function-lab.html) | Input value, ReLU / GELU / SiLU choice | `max(0, x)`, `x · Φ(x)`, `x · σ(x)`, the SwiGLU gate, and their gradients | The nonlinearity inside the feed-forward network |
 | 14 | [Feed-Forward Network Playground](feed-forward-network-lab.html) | Input vector, weights, activation | Linear → nonlinear → linear transformation | Shows what happens after attention |
 | 15 | [Transformer Block Playground](transformer-block-lab.html) | Toggle attention, FFN, residuals, norm | One complete transformer layer | Integrates the previous concepts |
 | 16 | [Next-Token Prediction Playground](next-token-prediction-lab.html) | Vocabulary logits | Hidden state → next-token scores | Connects transformer output to actual generation |
@@ -84,6 +85,7 @@ Query embedding → Chunk embedding → Cosine similarity → Retrieval → Cont
 - #6C-bridge: [Waves and Position Playground](waves-and-position-lab.html)
 - #6C0: [Number → Circle Playground](number-to-circle-lab.html)
 - #7: [Query–Key Similarity Playground](query-key-similarity-lab.html)
+- #13A: [Activation Function Playground](activation-function-lab.html)
 - #8–#35: [Softmax through Hallucination Playgrounds](softmax-lab.html) — all remaining roadmap mechanisms are now available as standalone interactive labs.
 
 The table order and the suggested first-ten learning order are distinct. Implementation follows the table; next is #4, tokenization.

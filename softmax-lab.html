@@ -196,6 +196,14 @@
       .exp-graph span { flex: 1; min-width: 0; background: var(--g); position: relative; }
       .exp-graph span b { position: absolute; bottom: 100%; left: 0; font: 10px monospace; color: var(--i2); }
       @media (max-width: 760px) { .softmax-flow { grid-template-columns: 1fr; } .arrow { transform: rotate(90deg); } }
+      .block-name { margin: 0 0 6px; font: 600 10px/1 monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--i3); }
+      .block-name + .network-wrap { margin-bottom: 18px; }
+      .network-wrap { margin-bottom: 14px; border: 1px solid var(--r); background: #fbfcfc; padding: 8px; overflow-x: auto; }
+      .network-wrap svg { display: block; width: 100%; min-width: 720px; height: auto; }
+      .network-wrap svg text { font-family: monospace; }
+      .network-label { font: 600 11px monospace; fill: var(--i2); }
+      .network-muted { font: 10px monospace; fill: var(--i3); }
+      .prob-bar:hover { stroke: var(--g); stroke-width: 2; }
       .bars {
         display: flex;
         align-items: end;
@@ -373,6 +381,9 @@
             ><span>one mechanism · one visible result</span>
           </div>
           <div class="visual">
+            <p class="block-name">Block 1 · Rich visual</p>
+            <div class="network-wrap"><svg id="softmaxNetwork" viewBox="0 0 1000 280" role="img" aria-label="Softmax flow diagram"></svg></div>
+            <p class="block-name">Block 2 · Equations and numbers playground</p>
             <div class="softmax-flow">
               <div class="flow-box">
                 <h3>Input · raw scores</h3>
@@ -396,10 +407,10 @@
             </div>
           </div>
           <div class="stages">
-            <div class="stage"><b>1 · input</b><span id="s1"></span></div>
-            <div class="stage"><b>2 · transform</b><span id="s2"></span></div>
-            <div class="stage"><b>3 · compare</b><span id="s3"></span></div>
-            <div class="stage"><b>4 · output</b><span id="s4"></span></div>
+            <div class="stage"><b>1 · scores</b><span id="s1"></span></div>
+            <div class="stage"><b>2 · scale = z / T</b><span id="s2"></span></div>
+            <div class="stage"><b>3 · exp + normalize</b><span id="s3"></span></div>
+            <div class="stage"><b>4 · probabilities</b><span id="s4"></span></div>
           </div>
         </section>
         <aside>
@@ -482,6 +493,40 @@
         const probabilities = exps.map((n) => n / total);
         const a = probabilities[0];
         const b = probabilities[1];
+        const names = ["tea", "coffee", "water"];
+        // Top view: scores → ÷ temperature → exp → ÷ Σ → probabilities.
+        {
+          const T = temperature, scaled = scores.map(z => z / T), top = probabilities.indexOf(Math.max(...probabilities));
+          const C = { z: '#2e63d6', e: '#c8324f', p: '#178a5a', t: '#6a4fd8' };
+          const rowY = j => 100 + j * 60, colX = [140, 340, 470, 600, 720];
+          const txt = (x, y, t, extra) => '<text x="' + x + '" y="' + y + '" ' + (extra || '') + '>' + t + '</text>';
+          const ribbon = (x1, y1, x2, y2, color, op, w) => '<path d="M' + x1 + ' ' + y1 + ' C' + (x1 + 60) + ' ' + y1 + ', ' + (x2 - 60) + ' ' + y2 + ', ' + x2 + ' ' + y2 + '" fill="none" stroke="' + color + '" stroke-opacity="' + op.toFixed(2) + '" stroke-width="' + w.toFixed(2) + '" stroke-linecap="round"/>';
+          const P = ['<rect width="1000" height="280" fill="transparent"/>'];
+          [['z', 'score (editable below)', C.z], ['T', 'temperature (control)', C.t], ['e', 'exp(z / T)', C.e], ['p', 'probability', C.p]].forEach(([l, t, c], i) => {
+            const xx = 20 + i * 200;
+            P.push('<rect x="' + xx + '" y="10" width="10" height="10" rx="2" fill="' + c + '"/>' + txt(xx + 15, 19, l + ' · ' + t, 'class="network-muted"'));
+          });
+          P.push(txt(20, 46, 'INPUT · scores', 'class="network-label"'), txt(300, 46, 'SOFTMAX · exp(z / T) / Σ', 'class="network-label"'), txt(700, 46, 'OUTPUT · probabilities', 'class="network-label"'));
+          P.push('<rect x="290" y="54" width="380" height="206" rx="4" fill="#fff" stroke="var(--r)"/>');
+          P.push('<rect x="' + (colX[1] - 34) + '" y="58" width="68" height="20" rx="4" fill="' + C.t + '" fill-opacity=".12"/>' + txt(colX[1], 72, 'T = ' + T.toFixed(2), 'text-anchor="middle" font-size="10" font-weight="700" fill="' + C.t + '"'));
+          P.push(txt(colX[2], 72, 'exp', 'text-anchor="middle" font-size="10" font-weight="700" fill="var(--i2)"'), txt(colX[3], 72, '÷ Σ = ' + total.toFixed(2), 'text-anchor="middle" font-size="10" font-weight="700" fill="var(--i2)"'));
+          scores.forEach((z, j) => {
+            const y = rowY(j), p = probabilities[j], isTop = j === top;
+            P.push('<rect x="20" y="' + (y - 13) + '" width="70" height="26" rx="5" fill="' + (isTop ? '#d6eae6' : '#fff') + '" stroke="' + (isTop ? 'var(--t)' : 'var(--r)') + '" stroke-width="' + (isTop ? 2 : 1.5) + '"/>' + txt(55, y + 4, names[j], 'text-anchor="middle" font-size="12" font-weight="700" fill="var(--i)"'));
+            const bw = Math.min(90, Math.abs(z) * 30), bx = z >= 0 ? colX[0] : colX[0] - bw;
+            P.push('<line x1="' + colX[0] + '" y1="' + (y - 12) + '" x2="' + colX[0] + '" y2="' + (y + 12) + '" stroke="var(--r)"/><rect x="' + bx + '" y="' + (y - 7) + '" width="' + bw + '" height="14" rx="2" fill="' + C.z + '" fill-opacity=".45"/>' + txt(colX[0] + (z >= 0 ? bw + 6 : -bw - 6), y + 4, z.toFixed(1), 'text-anchor="' + (z >= 0 ? 'start' : 'end') + '" font-size="9" fill="' + C.z + '"'));
+            P.push(ribbon(colX[0] + (z >= 0 ? bw + 30 : 30), y, colX[1] - 40, y, C.z, .35, 2));
+            P.push(txt(colX[1], y + 4, scaled[j].toFixed(2), 'text-anchor="middle" font-size="10" fill="' + C.t + '"'));
+            const r = 3 + Math.min(18, Math.sqrt(exps[j]) * 4);
+            P.push('<line x1="' + (colX[1] + 30) + '" y1="' + y + '" x2="' + (colX[2] - r - 2) + '" y2="' + y + '" stroke="var(--r)"/><circle cx="' + colX[2] + '" cy="' + y + '" r="' + r.toFixed(1) + '" fill="' + C.e + '" fill-opacity=".55"/>' + txt(colX[2] + r + 6, y + 4, exps[j].toFixed(2), 'font-size="9" fill="' + C.e + '"'));
+            P.push(ribbon(colX[2] + r + 34, y, colX[3] - 30, y, C.e, .15 + p * .6, 1 + p * 8));
+            P.push(txt(colX[3], y + 4, p.toFixed(3), 'text-anchor="middle" font-size="10" font-weight="700" fill="' + C.p + '"'));
+            P.push(ribbon(colX[3] + 30, y, colX[4] - 5, y, C.p, .15 + p * .7, 1 + p * 8));
+            P.push('<rect x="' + colX[4] + '" y="' + (y - 8) + '" width="' + (p * 120).toFixed(1) + '" height="16" rx="2" fill="' + C.p + '" fill-opacity="' + (.35 + p * .5).toFixed(2) + '" class="prob-bar"><title>' + names[j] + ': z=' + z.toFixed(1) + ' → exp(' + scaled[j].toFixed(2) + ')=' + exps[j].toFixed(2) + ' → ' + (p * 100).toFixed(1) + '%</title></rect>' + txt(colX[4] + p * 120 + 5, y + 4, (p * 100).toFixed(1) + '%', 'font-size="9" font-weight="700" fill="' + C.p + '"'));
+          });
+          P.push(txt(500, 276, 'bar width = probability · circle size = exp(z / T) · edit the scores below or drag Temperature: low T sharpens, high T flattens', 'text-anchor="middle" class="network-muted"'));
+          $("softmaxNetwork").innerHTML = P.join('');
+        }
         $("result").textContent = "Σ p = " + probabilities.reduce((s, p) => s + p, 0).toFixed(3);
         $("out").textContent = v;
         $("sub").textContent = probabilities.length + " probabilities · T = " + temperature.toFixed(2);
@@ -493,7 +538,6 @@
         $("expBars").innerHTML = exps.map((n, i) =>
           '<span style="height:' + (n / maxExp * 76) + 'px"><b>' + n.toFixed(1) + '</b></span>'
         ).join("");
-        const names = ["tea", "coffee", "water"];
         $("bars").innerHTML = probabilities.map((p, i) =>
           '<div class="prob-row"><div><span>' + names[i] + '</span><b>' + p.toFixed(3) + ' · ' + (p * 100).toFixed(1) + '%</b></div><div class="prob-track"><i style="width:' + (p * 100) + '%"></i></div></div>'
         ).join("");
@@ -501,8 +545,8 @@
         $("explain").textContent =
           "The same scores become sharper at low temperature and flatter at high temperature.";
         $("s1").textContent = "Scores = [" + scores.map((s) => s.toFixed(1)).join(", ") + "].";
-        $("s2").textContent = "Divide each score by the temperature.";
-        $("s3").textContent = "Exponentiate, then divide by the shared total.";
+        $("s2").textContent = "z / T = [" + scores.map((z) => (z / temperature).toFixed(2)).join(", ") + "] with T = " + temperature.toFixed(2) + ".";
+        $("s3").textContent = "exp → [" + exps.map((n) => n.toFixed(2)).join(", ") + "], Σ = " + total.toFixed(2) + ".";
         $("s4").textContent = "Probabilities sum to " + probabilities.reduce((s, p) => s + p, 0).toFixed(3) + ".";
         $("trace").textContent = [
           action,

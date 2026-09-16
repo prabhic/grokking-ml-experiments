@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Activation Function Playground</title>
+    <style>
+      :root {
+        --i: #14202e;
+        --i2: #41576c;
+        --i3: #7b90a2;
+        --p: #e6edf1;
+        --w: #fbfcfc;
+        --r: #c2d2dc;
+        --t: #0e7c6b;
+        --q: #b0234a;
+        --g: #c9901a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--p);
+        background-image:
+          linear-gradient(#7896a824 1px, transparent 1px),
+          linear-gradient(90deg, #7896a824 1px, transparent 1px);
+        background-size: 26px 26px;
+        color: var(--i);
+        font:
+          15px/1.5 system-ui,
+          sans-serif;
+      }
+      .bar {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #fbfcfcf5;
+        border-bottom: 1px solid var(--r);
+        display: flex;
+        min-height: 76px;
+      }
+      .brand {
+        width: 285px;
+        padding: 8px 14px;
+        border-right: 1px solid var(--r);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .meta {
+        display: flex;
+        justify-content: space-between;
+      }
+      .k,
+      .label {
+        font: 600 9px monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--i3);
+      }
+      a {
+        color: var(--t);
+      }
+      .meta a {
+        font: 9px monospace;
+      }
+      .name,
+      h1,
+      h3 {
+        font-family: Georgia, serif;
+      }
+      .name {
+        font-size: 21px;
+        font-weight: 600;
+      }
+      .idea {
+        font-size: 12px;
+        color: var(--t);
+      }
+      .live {
+        min-width: 190px;
+        padding: 8px 14px;
+        background: #d6eae6;
+        color: var(--t);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .live b {
+        font: 600 23px monospace;
+      }
+      .live small {
+        color: var(--i2);
+      }
+      .tools {
+        display: flex;
+        overflow: auto;
+        flex: 1;
+      }
+      .group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 12px;
+        border-right: 1px solid var(--r);
+        flex: none;
+      }
+      input[type="range"] {
+        accent-color: var(--t);
+        width: 140px;
+      }
+      .btn {
+        background: #fff;
+        border: 1px solid var(--r);
+        border-radius: 3px;
+        padding: 7px 10px;
+        cursor: pointer;
+      }
+      .btn:hover,
+      .btn.on {
+        background: var(--t);
+        color: #fff;
+      }
+      .primary {
+        background: var(--i);
+        color: #fff;
+      }
+      main {
+        padding: 14px 18px 72px;
+      }
+      .main {
+        max-width: 1680px;
+        margin: auto;
+        display: grid;
+        grid-template-columns: minmax(560px, 1fr) 340px;
+        gap: 14px;
+      }
+      .card {
+        background: var(--w);
+        border: 1px solid var(--r);
+        border-radius: 3px;
+      }
+      .board,
+      .panel {
+        padding: 14px;
+      }
+      .head {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        flex-wrap: wrap;
+        font: 12px monospace;
+        color: var(--i2);
+      }
+      .visual {
+        margin: 14px 0;
+        background: #fff;
+        border: 1px solid var(--r);
+        padding: 18px;
+        min-height: 190px;
+      }
+      .block-name { margin: 0 0 6px; font: 600 10px/1 monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--i3); }
+      .block-name + .network-wrap { margin-bottom: 18px; }
+      .network-wrap { margin-bottom: 14px; border: 1px solid var(--r); background: #fbfcfc; padding: 8px; overflow-x: auto; }
+      .network-wrap svg { display: block; width: 100%; min-width: 720px; height: auto; }
+      .network-wrap svg text { font-family: monospace; }
+      .network-label { font: 600 11px monospace; fill: var(--i2); }
+      .network-muted { font: 10px monospace; fill: var(--i3); }
+      .node:hover { stroke: var(--g); stroke-width: 3; }
+      .bars {
+        display: flex;
+        align-items: end;
+        gap: 12px;
+        height: 120px;
+      }
+      .bars i {
+        display: block;
+        width: 34px;
+        background: var(--t);
+        min-height: 3px;
+      }
+      .formula,
+      .trace {
+        background: #fff;
+        border: 1px solid var(--r);
+        border-left: 2px solid var(--t);
+        padding: 10px;
+        font: 11px/1.7 monospace;
+        white-space: pre-wrap;
+      }
+      .trace {
+        min-height: 120px;
+      }
+      .stages {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        border-top: 1px solid var(--r);
+        padding-top: 10px;
+        margin-top: 12px;
+      }
+      .stage {
+        padding: 8px;
+        border: 1px solid var(--r);
+        min-height: 80px;
+        font-size: 12px;
+        color: var(--i2);
+      }
+      .stage b {
+        display: block;
+        font: 600 10px monospace;
+        color: var(--t);
+      }
+      h2 {
+        font: 600 10px monospace;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--i3);
+        border-bottom: 1px solid var(--r);
+        padding-bottom: 8px;
+      }
+      .metric {
+        border-left: 2px solid var(--r);
+        padding-left: 9px;
+        margin: 12px 0;
+      }
+      .metric b {
+        font: 600 23px monospace;
+        display: block;
+      }
+      .metric small {
+        font: 10px monospace;
+        text-transform: uppercase;
+        color: var(--i3);
+      }
+      .note {
+        font-size: 13px;
+        color: var(--i2);
+      }
+      .story {
+        max-width: 1180px;
+        margin: auto;
+        padding: 58px 20px 0;
+      }
+      .title {
+        font-size: clamp(30px, 5vw, 52px);
+        line-height: 1.02;
+        max-width: 19ch;
+      }
+      .title em {
+        color: var(--t);
+      }
+      .lede {
+        max-width: 72ch;
+        color: var(--i2);
+        font-size: 17px;
+      }
+      .notes {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 22px;
+        border-top: 1px solid var(--r);
+        padding-top: 26px;
+        margin-top: 34px;
+      }
+      .note-block p {
+        color: var(--i2);
+        font-size: 14px;
+      }
+      .foot {
+        font: 11px monospace;
+        margin-top: 30px;
+      }
+      @media (max-width: 1050px) {
+        .bar {
+          display: block;
+        }
+        .brand {
+          width: 100%;
+          min-height: 68px;
+          border: 0;
+          border-bottom: 1px solid var(--r);
+        }
+        .tools {
+          height: 70px;
+        }
+        .main {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 660px) {
+        .stages {
+          grid-template-columns: 1fr 1fr;
+        }
+        main {
+          padding: 10px 8px;
+        }
+        .story {
+          padding-top: 36px;
+        }
+      }
+      .btn[aria-pressed="true"] { background: var(--t); color: #fff; border-color: var(--t); }
+    </style>
+  </head>
+  <body>
+    <header class="bar">
+      <div class="brand">
+        <div class="meta">
+          <span class="k">LLM first principles · 13A/35</span
+          ><a href="#learn">Learn ↓</a>
+        </div>
+        <strong class="name">Activation Function</strong
+        ><span class="idea">ReLU, GELU, and SiLU decide how much of each number passes through.</span>
+      </div>
+      <div class="live">
+        <span class="k">Live result</span><b id="result">—</b
+        ><small id="sub">move the input</small>
+      </div>
+      <div class="tools">
+        <div class="group">
+          <span class="label">Input x</span
+          ><input id="control" type="range" min="-300" max="300" value="100" /><output id="out">1.00</output>
+        </div>
+        <div class="group">
+          <span class="label">Function</span
+          ><button class="btn" id="pickRelu" aria-pressed="false">ReLU</button
+          ><button class="btn" id="pickGelu" aria-pressed="true">GELU</button
+          ><button class="btn" id="pickSilu" aria-pressed="false">SiLU</button>
+        </div>
+        <div class="group">
+          <span class="label">Try</span
+          ><button class="btn" id="try">−0.5</button>
+        </div>
+        <div class="group">
+          <span class="label">Start</span
+          ><button class="btn primary" id="reset">Reset</button>
+        </div>
+      </div>
+    </header>
+    <main>
+      <div class="main">
+        <section class="card board">
+          <div class="head">
+            <span>ReLU, GELU, and SiLU decide how much of each number passes through.</span
+            ><span>one mechanism · one visible result</span>
+          </div>
+          <div class="visual">
+            <p class="block-name">Block 1 · Rich visual</p>
+            <div class="network-wrap"><svg id="activationNetwork" viewBox="0 0 1000 300" role="img" aria-label="Activation function curve and elementwise gate diagram"></svg></div>
+            <p class="block-name">Block 2 · Equations and numbers playground</p>
+            <div class="formula" id="formula"></div>
+            <div class="bars" id="bars"></div>
+            <p class="note" id="explain"></p>
+          </div>
+          <div class="stages">
+            <div class="stage"><b>1 · input x</b><span id="s1"></span></div>
+            <div class="stage"><b>2 · ReLU = max(0, x)</b><span id="s2"></span></div>
+            <div class="stage"><b>3 · GELU = x · Φ(x) · SiLU = x · σ(x)</b><span id="s3"></span></div>
+            <div class="stage"><b>4 · gradient</b><span id="s4"></span></div>
+          </div>
+        </section>
+        <aside>
+          <section class="card panel">
+            <h2>Readout <span>current state</span></h2>
+            <div class="metric">
+              <b id="metric"></b><small id="metricLabel">f(x)</small>
+            </div>
+            <div class="metric">
+              <b id="secondary"></b><small id="secondaryLabel">f′(x) · gradient</small>
+            </div>
+            <p class="note" id="insight"></p>
+          </section>
+          <section class="card panel">
+            <h2>Trace <span>what just changed</span></h2>
+            <div class="trace" id="trace"></div>
+          </section>
+        </aside>
+      </div>
+      <article class="story" id="learn">
+        <p class="k">LLM first principles · Activation Function Playground</p>
+        <h1 class="title">
+          An activation decides how much of each number passes <em>through.</em>
+        </h1>
+        <p class="lede">
+          Inside the feed-forward network, every hidden value meets one small
+          function. ReLU cuts negatives to zero. GELU and SiLU let small
+          negatives leak through a little. SwiGLU multiplies SiLU by a second
+          projection. This playground shows each curve, its slope, and the
+          function acting on a whole hidden vector at once.
+        </p>
+        <div class="notes">
+          <section class="note-block">
+            <h3>Read the playground</h3>
+            <p>
+              The left plot draws both functions with the selected one bold. The
+              dot is the current input; the short tangent is its gradient. The
+              right side is one hidden vector of the feed-forward network: the
+              first element is your slider, the rest are fixed. Each element goes
+              through the same function independently.
+            </p>
+          </section>
+          <section class="note-block">
+            <h3>What this isolates</h3>
+            <p>
+              Only the nonlinearity. No weights change here. The feed-forward
+              lab adds the two linear layers on either side of this function.
+            </p>
+          </section>
+          <section class="note-block">
+            <h3>Why it matters</h3>
+            <p>
+              Two linear layers in a row collapse into one linear layer. The
+              activation between them is what lets the feed-forward network
+              represent anything more than a single matrix multiply. Its
+              gradient also decides whether a hidden unit can keep learning: a
+              ReLU unit stuck below zero receives no gradient at all.
+            </p>
+          </section>
+          <section class="note-block">
+            <h3>Terms</h3>
+            <p>
+              <b>elementwise</b> means the function is applied to each number on
+              its own. <b>Φ(x)</b> is the standard normal cumulative
+              distribution, the chance a random normal draw is below x.
+              <b>dead unit</b> is a ReLU input that stays negative, so its output
+              and gradient are both zero.
+            </p>
+          </section>
+          <section class="note-block">
+            <h3>Try this</h3>
+            <ol>
+              <li>Drag x below zero with ReLU selected and watch both readouts go to exactly 0.</li>
+              <li>Switch to GELU at the same x: the output is slightly negative and the gradient is not zero.</li>
+              <li>Move x past 2 and see the two curves become nearly identical.</li>
+              <li>Find the x where GELU is most negative (about −0.75) and read its value.</li>
+              <li>Select SiLU and watch a positive hidden value become negative because its value projection is negative.</li>
+            </ol>
+          </section>
+          <section class="note-block">
+            <h3>A short history</h3>
+            <p>
+              Rectifier-style units go back to Fukushima's 1969 and 1980 work, but ReLU became the default after Nair and Hinton (2010) and Glorot, Bordes, and Bengio's 2011 deep sparse rectifier paper showed it trained deep networks faster than sigmoids. GELU was proposed by Hendrycks and Gimpel in 2016 and adopted by BERT and GPT-2; the tanh approximation used here is the one GPT-2 ships. SiLU, also called Swish, was studied by Elfwing and colleagues (2017) and by Ramachandran, Zoph, and Le (2017); Shazeer (2020) combined it with a multiplicative gate as SwiGLU, now the default in LLaMA, Mistral, and Gemma. Sigmoid and tanh, the earlier defaults, saturate on both sides and starve deep networks of gradient, which is why they left the feed-forward layer.
+              <a href="https://proceedings.mlr.press/v15/glorot11a.html" target="_blank" rel="noopener">Glorot et al. 2011 ↗</a>
+              <a href="https://arxiv.org/abs/1606.08415" target="_blank" rel="noopener">GELU paper ↗</a>
+              <a href="https://arxiv.org/abs/1710.05941" target="_blank" rel="noopener">Swish paper ↗</a>
+              <a href="https://arxiv.org/abs/2002.05202" target="_blank" rel="noopener">GLU variants ↗</a>
+            </p>
+          </section>
+        </div>
+        <p class="foot">
+          <a href="index.html">← Playground explorer</a> ·
+          <a href="feed-forward-network-lab.html">Next: feed-forward network</a> ·
+          <a href="llm-playground-roadmap.md">Learning roadmap</a>
+        </p>
+      </article>
+    </main>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      let v = 100, fn = "gelu";
+      const relu = (x) => Math.max(0, x);
+      const gelu = (x) => 0.5 * x * (1 + Math.tanh(Math.sqrt(2 / Math.PI) * (x + 0.044715 * x * x * x)));
+      const phi = (x) => gelu(x) / (x || 1e-9);
+      const dRelu = (x) => (x > 0 ? 1 : 0);
+      const dGelu = (x) => (gelu(x + 1e-4) - gelu(x - 1e-4)) / 2e-4;
+      const sig = (x) => 1 / (1 + Math.exp(-x));
+      const silu = (x) => x * sig(x);
+      const dSilu = (x) => sig(x) * (1 + x * (1 - sig(x)));
+      const VAL = [0.9, 1.4, -0.7, 1.1, 0.6, -1.2]; // second projection, used only by the SwiGLU gate
+      const FN = { relu: [relu, dRelu, "ReLU"], gelu: [gelu, dGelu, "GELU"], silu: [silu, dSilu, "SiLU"] };
+      const HID = [1.8, -0.6, 0.3, -2.1, 0.9];
+      function render(action = "Moved input") {
+        const x = v / 100, [f, df, name] = FN[fn], gated = fn === "silu";
+        const h = [x, ...HID], act = h.map(f), out = gated ? act.map((n, i) => n * VAL[i]) : act;
+        const a = f(x), b = df(x);
+        {
+          const C = { relu: '#c8324f', gelu: '#2e63d6', silu: '#b8860b', x: '#6a4fd8', out: '#178a5a' };
+          const on = C[fn];
+          const txt = (px, py, t, extra) => '<text x="' + px + '" y="' + py + '" ' + (extra || '') + '>' + t + '</text>';
+          // plot: x ∈ [-3, 3], y ∈ [-1, 3]
+          const PX = (xx) => 60 + (xx + 3) / 6 * 380, PY = (yy) => 262 - (yy + 1) / 4 * 200;
+          const curve = (g) => { let d = ''; for (let i = 0; i <= 120; i++) { const xx = -3 + i / 20; d += (i ? ' L' : 'M') + PX(xx).toFixed(1) + ' ' + PY(g(xx)).toFixed(1); } return d; };
+          const P = ['<rect width="1000" height="300" fill="transparent"/>'];
+          [['ReLU', 'max(0, x)', C.relu], ['GELU', 'x · Φ(x)', C.gelu], ['SiLU', 'x · σ(x)', C.silu], ['x', 'current input', C.x], ['out', 'passes through', C.out]].forEach(([l, t, c], i) => {
+            const xx = 20 + i * 195;
+            P.push('<rect x="' + xx + '" y="10" width="10" height="10" rx="2" fill="' + c + '"/>' + txt(xx + 15, 19, l + ' · ' + t, 'class="network-muted"'));
+          });
+          P.push(txt(20, 46, 'CURVE · ' + name + ' selected', 'class="network-label"'), txt(520, 46, gated ? 'SWIGLU · SiLU(gate) ⊙ value, elementwise' : 'ELEMENTWISE · one hidden vector through ' + name, 'class="network-label"'));
+          for (let g = -1; g <= 3; g++) P.push('<line x1="' + PX(-3) + '" y1="' + PY(g) + '" x2="' + PX(3) + '" y2="' + PY(g) + '" stroke="var(--r)" stroke-width="' + (g ? .6 : 1.4) + '"/>' + txt(PX(-3) - 6, PY(g) + 3, g, 'text-anchor="end" font-size="8" fill="var(--i3)"'));
+          for (let g = -3; g <= 3; g++) P.push('<line x1="' + PX(g) + '" y1="' + PY(-1) + '" x2="' + PX(g) + '" y2="' + PY(3) + '" stroke="var(--r)" stroke-width="' + (g ? .6 : 1.4) + '"/>' + txt(PX(g), PY(-1) + 12, g, 'text-anchor="middle" font-size="8" fill="var(--i3)"'));
+          Object.keys(FN).filter((k) => k !== fn).forEach((k) => P.push('<path d="' + curve(FN[k][0]) + '" fill="none" stroke="' + C[k] + '" stroke-opacity=".45" stroke-width="1.5" stroke-dasharray="5 4"/>'));
+          P.push('<path d="' + curve(f) + '" fill="none" stroke="' + on + '" stroke-width="2.5"/>');
+          P.push('<line x1="' + PX(x) + '" y1="' + PY(-1) + '" x2="' + PX(x) + '" y2="' + PY(a) + '" stroke="' + C.x + '" stroke-dasharray="3 3"/>');
+          P.push('<line x1="' + PX(x - .5) + '" y1="' + PY(a - .5 * b) + '" x2="' + PX(x + .5) + '" y2="' + PY(a + .5 * b) + '" stroke="' + C.out + '" stroke-width="2" stroke-opacity=".8"/>');
+          P.push('<circle cx="' + PX(x) + '" cy="' + PY(a) + '" r="6" fill="' + C.x + '" class="node"><title>x = ' + x.toFixed(2) + '  f(x) = ' + a.toFixed(3) + '  slope = ' + b.toFixed(3) + '</title></circle>');
+          P.push(txt(x > 0.5 ? PX(x) - 10 : PX(x) + 10, PY(a) - 10, 'f(' + x.toFixed(2) + ') = ' + a.toFixed(2) + ' · slope ' + b.toFixed(2), 'text-anchor="' + (x > 0.5 ? 'end' : 'start') + '" font-size="9" font-weight="700" fill="' + C.x + '"'));
+          // gate view
+          const GX = 540, W = 420, n = h.length, cw = W / n, hy = 112, oy = 250, scale = 20;
+          P.push(txt(GX - 8, hy - 30, 'in', 'text-anchor="end" font-size="9" font-weight="700" fill="var(--i2)"'), txt(GX - 8, oy - 30, 'out', 'text-anchor="end" font-size="9" font-weight="700" fill="' + C.out + '"'));
+          P.push('<line x1="' + GX + '" y1="' + hy + '" x2="' + (GX + W) + '" y2="' + hy + '" stroke="var(--r)"/><line x1="' + GX + '" y1="' + oy + '" x2="' + (GX + W) + '" y2="' + oy + '" stroke="var(--r)"/>');
+          P.push('<rect x="' + GX + '" y="' + (hy + 60) + '" width="' + W + '" height="22" rx="4" fill="' + on + '" fill-opacity=".1" stroke="' + on + '"/>' + txt(GX + W / 2, hy + 75, gated ? '' : name + ' applied to every element', 'text-anchor="middle" font-size="10" font-weight="700" fill="' + on + '"'));
+          h.forEach((val, i) => {
+            const cx = GX + cw * i + cw / 2, o = out[i], isX = i === 0;
+            const bar = (cy, val2, color) => '<rect x="' + (cx - 12) + '" y="' + (val2 >= 0 ? cy - val2 * scale : cy) + '" width="24" height="' + (Math.abs(val2) * scale).toFixed(1) + '" rx="2" fill="' + color + '" fill-opacity="' + (isX ? .7 : .45) + '" class="node"><title>' + val2.toFixed(3) + '</title></rect>';
+            P.push(bar(hy, val, isX ? C.x : '#41576c'), txt(cx, hy + 12 + (val < 0 ? Math.abs(val) * scale : 0), val.toFixed(2), 'text-anchor="middle" font-size="8.5" fill="var(--i2)"'));
+            P.push(bar(oy, o, C.out), txt(cx, oy + 12 + (o < 0 ? Math.abs(o) * scale : 0), o.toFixed(2), 'text-anchor="middle" font-size="8.5" font-weight="700" fill="' + C.out + '"'));
+            P.push('<line x1="' + cx + '" y1="' + (hy + 84) + '" x2="' + cx + '" y2="' + (oy - 40) + '" stroke="' + on + '" stroke-opacity="' + (.15 + Math.min(1, Math.abs(o)) * .6).toFixed(2) + '" stroke-width="' + (1 + Math.min(1, Math.abs(o)) * 5).toFixed(1) + '" stroke-linecap="round"/>');
+            if (isX) P.push(txt(cx, hy - 44, 'x (slider)', 'text-anchor="middle" font-size="8" font-weight="700" fill="' + C.x + '"'));
+            if (gated) P.push(txt(cx, hy + 75, '× ' + VAL[i].toFixed(1), 'text-anchor="middle" font-size="9" font-weight="700" fill="' + C.silu + '"'));
+          });
+          P.push(txt(500, 296, 'dashed curves = the other functions · tangent = gradient at x · negatives are cut (ReLU) or gently leaked (GELU, SiLU) · SiLU shows the SwiGLU gate on the right', 'text-anchor="middle" class="network-muted"'));
+          $("activationNetwork").innerHTML = P.join('');
+        }
+        $("result").textContent = a.toFixed(3);
+        $("sub").textContent = name + "(" + x.toFixed(2) + ")";
+        $("metric").textContent = a.toFixed(3);
+        $("metricLabel").textContent = name + "(x)";
+        $("secondary").textContent = b.toFixed(3);
+        $("secondaryLabel").textContent = name + "′(x) · gradient";
+        $("out").textContent = x.toFixed(2);
+        $("formula").textContent =
+          "ReLU(x) = max(0, x)                       ReLU(" + x.toFixed(2) + ") = " + relu(x).toFixed(3) + "   ReLU′ = " + dRelu(x) + "\n" +
+          "GELU(x) = x · Φ(x)                        Φ(" + x.toFixed(2) + ") = " + phi(x).toFixed(3) + "   GELU(" + x.toFixed(2) + ") = " + gelu(x).toFixed(3) + "   GELU′ = " + dGelu(x).toFixed(3) + "\n" +
+          "SiLU(x) = x · σ(x)     σ(x) = 1 / (1 + e⁻ˣ)      σ(" + x.toFixed(2) + ") = " + sig(x).toFixed(3) + "   SiLU(" + x.toFixed(2) + ") = " + silu(x).toFixed(3) + "   SiLU′ = " + dSilu(x).toFixed(3) + "\n" +
+          "Φ(x) ≈ ½ · (1 + tanh(√(2/π) · (x + 0.044715 · x³)))    (tanh approximation, as in GPT-2)\n" +
+          "hidden  = [" + h.map((n) => n.toFixed(2)).join(", ") + "]\n" +
+          name + "(hidden) = [" + act.map((n) => n.toFixed(2)).join(", ") + "]" +
+          (gated ? "\nvalue   = [" + VAL.map((n) => n.toFixed(2)).join(", ") + "]\nSwiGLU  = SiLU(hidden) ⊙ value = [" + out.map((n) => n.toFixed(2)).join(", ") + "]    (LLaMA-style FFN: value is a second linear projection of the same token)" : "");
+        const heights = [relu(x), gelu(x), silu(x), dRelu(x), dGelu(x), dSilu(x)].map((z) => Math.min(100, Math.max(3, Math.abs(z) * 33)));
+        $("bars").innerHTML = heights
+          .map((hh, i) => '<i style="height:' + hh + 'px" title="' + ['ReLU(x)', 'GELU(x)', 'SiLU(x)', 'ReLU′(x)', 'GELU′(x)', 'SiLU′(x)'][i] + '"></i>')
+          .join("");
+        $("explain").textContent =
+          "Bars: ReLU(x), GELU(x), SiLU(x), then ReLU′(x), GELU′(x), SiLU′(x) as magnitudes. " +
+          (x <= 0 ? "Below zero ReLU gives 0 with zero gradient; GELU and SiLU keep a small value and a nonzero slope." : x < 2 ? "Just above zero they differ slightly; GELU and SiLU are smooth where ReLU has a corner, and SiLU dips a little deeper." : "Far above zero all three are essentially the identity.");
+        $("s1").textContent = "x = " + x.toFixed(2) + " (first element of the hidden vector).";
+        $("s2").textContent = "max(0, " + x.toFixed(2) + ") = " + relu(x).toFixed(3) + ".";
+        $("s3").textContent = "GELU: " + x.toFixed(2) + " × " + phi(x).toFixed(3) + " = " + gelu(x).toFixed(3) + ". SiLU: " + x.toFixed(2) + " × " + sig(x).toFixed(3) + " = " + silu(x).toFixed(3) + ".";
+        $("s4").textContent = "ReLU′ = " + dRelu(x) + ", GELU′ = " + dGelu(x).toFixed(3) + ", SiLU′ = " + dSilu(x).toFixed(3) + ". Backprop multiplies by this.";
+        $("insight").textContent =
+          x <= 0 && fn === "relu"
+            ? "This unit is dead for this input: output 0 and gradient 0, so nothing upstream learns from it."
+            : gated
+            ? "SwiGLU multiplies the smooth gate by a second projection, so a unit can be switched off by either path. LLaMA, Mistral, and Gemma use this form."
+            : "All three pass large positives unchanged. They differ only near and below zero, which is exactly where learning signals are fragile.";
+        $("trace").textContent = [
+          action,
+          "Function: " + name,
+          "x: " + x.toFixed(2),
+          "f(x): " + a.toFixed(3),
+          "f′(x): " + b.toFixed(3),
+          "hidden → " + (gated ? "SwiGLU" : name) + ": [" + h.map((n) => n.toFixed(1)).join(", ") + "] → [" + out.map((n) => n.toFixed(2)).join(", ") + "]",
+        ].join("\n");
+      }
+      const pick = (which) => {
+        fn = which;
+        $("pickRelu").setAttribute("aria-pressed", which === "relu");
+        $("pickGelu").setAttribute("aria-pressed", which === "gelu");
+        $("pickSilu").setAttribute("aria-pressed", which === "silu");
+        render("Selected " + FN[which][2]);
+      };
+      $("pickRelu").onclick = () => pick("relu");
+      $("pickGelu").onclick = () => pick("gelu");
+      $("pickSilu").onclick = () => pick("silu");
+      $("control").oninput = (e) => { v = +e.target.value; render("Changed x"); };
+      $("try").onclick = () => { v = -50; $("control").value = -50; render("Loaded example x = −0.5"); };
+      $("reset").onclick = () => { v = 100; $("control").value = 100; pick("gelu"); };
+      render();
+    </script>
+  </body>
+</html>
